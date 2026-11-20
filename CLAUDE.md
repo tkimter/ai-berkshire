@@ -1,123 +1,147 @@
-# AI Berkshire — 项目指令
+# AI Berkshire — 프로젝트 지침
 
-## 项目概述
+## 언어 (전역 규칙, 최우선)
 
-基于 Claude Code 的价值投资研究 Skill 合集。四大师框架：巴菲特、芒格、段永平、李录。
-GitHub: xbtlin/ai-berkshire
+- 사용자에게 하는 **모든 대답은 한국어**로 한다.
+- 영어는 불가피한 경우(고유명사, 코드·명령어, 마땅한 번역어가 없는 기술 용어)에만 단어 수준으로 쓴다.
+- 보고서 본문, 새로 만드는 **파일명과 폴더명**, 커밋 메시지도 모두 **한국어**로 쓴다.
+- 중국어는 쓰지 않는다. 예외는 원문과 일치해야 하는 것뿐이다: 중국어 자료를 찾는 검색어, 중국 데이터 출처 이름(东方财富, 巨潮资讯 등), 원문 인용, 이미 있는 중국어 파일·폴더 경로.
+- 기존 중국어 보고서는 번역하거나 이름을 바꾸지 않고 그대로 둔다. 사용자가 요청할 때만 옮긴다.
 
-## 项目结构
+## 프로젝트 개요
+
+Claude Code 기반 가치투자 리서치 Skill 모음. 4대 거장 프레임워크: 버핏, 멍거, 돤융핑(段永平), 리루(李录).
+
+이 저장소는 `xbtlin/ai-berkshire`(중국어 원본)를 포크해 한국어 기준으로 바꾼 것이다.
+
+## 프로젝트 구조
 
 ```
-skills/          — 投研 Skill 定义（.md），复制到 ~/.claude/commands/ 使用
-tools/           — 辅助工具（financial_rigor.py 精确计算、twstock_data.py 台股FinMind取数）
-reports/         — 投资研究报告输出
-assets/          — 图片等静态资源
+skills/          — 리서치 Skill 정의(.md). ~/.claude/commands/ 에 복사해 쓴다
+tools/           — 보조 도구 (financial_rigor.py 정밀 계산, twstock_data.py 대만 주식 FinMind 조회)
+reports/         — 투자 연구 보고서 출력
+assets/          — 이미지 등 정적 자원
 ```
 
-## 报告目录结构
+`skills/*.md`를 고친 뒤에는 `python3 scripts/sync-codex-skills.py`로 `codex-skills/`를 다시 만든다(AGENTS.md 참고).
 
-所有报告按**公司名**建文件夹，公司相关的所有报告放在对应文件夹内：
+## 보고서 폴더 구조
+
+모든 보고서는 **회사명**으로 폴더를 만들고, 그 회사의 보고서는 전부 해당 폴더에 넣는다.
 
 ```
 reports/
-├── AI产业研究/              — AI产业链全景研究（置顶）
-│   ├── AI五层蛋糕-产业全景研究-20260605.md
-│   └── AI五层蛋糕-公众号-20260605.md
-├── 腾讯/                    — 腾讯所有研究报告
-│   ├── 腾讯-research-20260408.md
-│   ├── 腾讯-earnings-2025Q4.md
-│   ├── 腾讯-management-20260409.md
-│   └── 腾讯-thesis.md
-├── 拼多多/                  — 拼多多所有研究报告
-├── 泡泡玛特/                — 泡泡玛特所有研究报告
-├── 核电-industry-20260409.md — 行业报告放根目录
-├── AI算力-funnel-20260509.md  — 漏斗筛选报告放根目录
-├── AI-轮动判断-20260509.md    — 主题级综合判断报告放根目录
-├── portfolio-latest.md       — 组合报告放根目录
-└── 多公司对比-checklist-20260408.md — 多公司报告放根目录
+├── AI산업연구/               — AI 산업 체인 전체 연구
+│   ├── AI5층케이크-산업전체연구-20260605.md
+│   └── AI5층케이크-공식계정-20260605.md
+├── 텐센트/                   — 텐센트의 모든 연구 보고서
+│   ├── 텐센트-research-20260408.md
+│   ├── 텐센트-earnings-2025Q4.md
+│   ├── 텐센트-management-20260409.md
+│   └── 텐센트-thesis.md
+├── 핀둬둬/                   — 핀둬둬의 모든 연구 보고서
+├── 팝마트/                   — 팝마트의 모든 연구 보고서
+├── 원전-industry-20260409.md  — 산업 보고서는 루트에 둔다
+├── AI컴퓨팅-funnel-20260509.md — 퍼널 스크리닝 보고서는 루트에 둔다
+├── AI-로테이션판단-20260509.md — 테마 단위 종합 판단 보고서는 루트에 둔다
+├── portfolio-latest.md        — 포트폴리오 보고서는 루트에 둔다
+└── 다수기업비교-checklist-20260408.md — 여러 기업을 다루는 보고서는 루트에 둔다
 ```
 
-## 报告命名规范
+### 이름 규칙
 
-| Skill | 文件命名格式 | 示例 |
+- 회사명·산업명은 한국에서 통용되는 한국어 표기를 쓴다(텐센트, 핀둬둬, 마오타이, 엔비디아). 통용 표기가 없으면 영문 사명을 쓴다.
+- 파일명·폴더명에는 공백을 쓰지 않고 `-`로 잇는다.
+- **같은 회사의 기존 중국어 폴더가 있을 때**(예: `reports/腾讯/`): 새 보고서는 한국어 폴더(`reports/텐센트/`)에 쓰고,
+  `reports/_index/config.json`의 `aliases`에 `"腾讯": "텐센트"`를 추가해 색인에서 한 그룹으로 묶는다. 기존 폴더는 옮기지 않는다.
+- 과거 보고서를 참고하거나 thesis 파일을 찾을 때는 한국어 폴더와 기존 중국어 폴더를 **둘 다** 확인한다.
+
+## 보고서 파일명 규칙
+
+| Skill | 파일명 형식 | 예시 |
 |------|---------|------|
-| /investment-team | `{公司名}/` 目录内含4个视角+最终报告 | `reports/拼多多/最终报告.md` |
-| /investment-research | `{公司名}-research-{YYYYMMDD}.md` | `reports/腾讯/腾讯-research-20260408.md` |
-| /investment-checklist | `{公司名}-checklist-{YYYYMMDD}.md` | `reports/腾讯/腾讯-checklist-20260408.md` |
-| /industry-research | `{行业名}-industry-{YYYYMMDD}.md`（根目录） | `reports/核电-industry-20260409.md` |
-| /industry-funnel | `{行业名}-funnel-{YYYYMMDD}.md`（根目录） | `reports/AI算力-funnel-20260509.md` |
-| /private-company-research | `{公司名}-private-{YYYYMMDD}.md` | `reports/字节跳动/字节跳动-private-20260408.md` |
-| /earnings-review | `{公司名}-earnings-{期间}.md` | `reports/腾讯/腾讯-earnings-2025Q4.md` |
-| /earnings-team | `{公司名}/` 目录内含4个大师视角+研究底稿+公众号文章+读者评审 | `reports/腾讯/腾讯-earnings-2025Q4.md`（公众号定稿） |
-| /thesis-tracker | `{公司名}-thesis.md`（长期维护） | `reports/腾讯/腾讯-thesis.md` |
-| /portfolio-review | `portfolio-latest.md`（根目录，持续更新） | `reports/portfolio-latest.md` |
-| /management-deep-dive | `{公司名}-management-{YYYYMMDD}.md` | `reports/腾讯/腾讯-management-20260409.md` |
+| /investment-team | `{회사명}/` 폴더에 4개 관점 + 최종보고서 | `reports/핀둬둬/최종보고서.md` |
+| /investment-research | `{회사명}-research-{YYYYMMDD}.md` | `reports/텐센트/텐센트-research-20260408.md` |
+| /investment-checklist | `{회사명}-checklist-{YYYYMMDD}.md` | `reports/텐센트/텐센트-checklist-20260408.md` |
+| /industry-research | `{산업명}-industry-{YYYYMMDD}.md` (루트) | `reports/원전-industry-20260409.md` |
+| /industry-funnel | `{산업명}-funnel-{YYYYMMDD}.md` (루트) | `reports/AI컴퓨팅-funnel-20260509.md` |
+| /private-company-research | `{회사명}-private-{YYYYMMDD}.md` | `reports/바이트댄스/바이트댄스-private-20260408.md` |
+| /earnings-review | `{회사명}-earnings-{기간}.md` | `reports/텐센트/텐센트-earnings-2025Q4.md` |
+| /earnings-team | `{회사명}/` 폴더에 4대 거장 관점 + 연구초안 + 공식계정 글 + 독자리뷰 | `reports/텐센트/텐센트-earnings-2025Q4.md` (공식계정 최종본) |
+| /thesis-tracker | `{회사명}-thesis.md` (장기 관리) | `reports/텐센트/텐센트-thesis.md` |
+| /portfolio-review | `portfolio-latest.md` (루트, 계속 갱신) | `reports/portfolio-latest.md` |
+| /management-deep-dive | `{회사명}-management-{YYYYMMDD}.md` | `reports/텐센트/텐센트-management-20260409.md` |
 
-## /investment-team 文件结构
+skill 정의에 적힌 저장 경로가 이 표와 다르면 이 표를 따른다.
+
+## /investment-team 파일 구조
 
 ```
-reports/{公司名}/
-├── README.md                         — 研究框架概览+核心结论
-├── 01-商业模式分析-段永平视角.md
-├── 02-财务估值分析-巴菲特视角.md
-├── 03-行业竞争分析-芒格视角.md
-├── 04-风险管理层评估-李录视角.md
-└── 最终报告.md                       — Team Lead 综合报告
+reports/{회사명}/
+├── README.md                              — 연구 프레임 개요 + 핵심 결론
+├── 01-비즈니스모델분석-돤융핑관점.md
+├── 02-재무밸류에이션분석-버핏관점.md
+├── 03-산업경쟁분석-멍거관점.md
+├── 04-리스크경영진평가-리루관점.md
+└── 최종보고서.md                          — Team Lead 종합 보고서
 ```
 
-## 投研分析核心原则（最高优先级）
+## 투자 분석 핵심 원칙 (최우선)
 
-- **客观、客观、客观**——所有投研分析必须基于事实和数据，严禁主观臆断
-- 严格区分"事实"与"观点"：事实用数据支撑，观点必须明确标注为"观点"或"推测"
-- **不预设立场**：不预设看多或看空，先摆数据、再推逻辑、最后得结论。结论必须从数据中自然推出
-- 禁止使用"我认为"、"我觉得"、"显然"等主观表述，改用"数据显示"、"证据表明"、"根据XX来源"
-- **呈现正反两面**：每个核心判断都必须附带反面论据（"但另一方面..."），让读者自己权衡
-- 对不确定的事情诚实说"不确定"或"数据不足"，不要用推测填充确定性
-- 所有skill（investment-team、investment-research、earnings-review等）在执行时都必须遵守以上原则
+- **객관, 객관, 객관** — 모든 분석은 사실과 데이터에 근거한다. 주관적 억측은 엄격히 금지한다
+- "사실"과 "의견"을 엄격히 구분한다. 사실은 데이터로 뒷받침하고, 의견은 반드시 "의견" 또는 "추정"이라고 표시한다
+- **입장을 미리 정하지 않는다**: 매수 관점도 매도 관점도 미리 정하지 않는다. 데이터를 먼저 놓고, 논리를 전개한 뒤, 결론을 낸다. 결론은 데이터에서 자연스럽게 나와야 한다
+- "~라고 생각한다", "~인 것 같다", "분명히" 같은 주관적 표현을 쓰지 않는다. "데이터에 따르면", "증거가 보여 주는 바로는", "XX 출처에 따르면"으로 쓴다
+- **양면을 모두 제시한다**: 핵심 판단마다 반대 논거("다만 한편으로는...")를 붙여 독자가 직접 저울질하게 한다
+- 불확실한 것은 "불확실하다", "데이터가 부족하다"고 정직하게 쓴다. 추측으로 확실성을 채우지 않는다
+- 모든 skill(investment-team, investment-research, earnings-review 등)은 실행할 때 위 원칙을 지킨다
 
-## 报告语言与风格
+## 보고서 언어와 문체
 
-- 所有报告使用**中文**
-- 风格：直接、犀利、不说废话
-- 数据必须标注来源，关键数据至少2个来源交叉验证
-- 估计值必须注明"估计"
-- 评分使用★符号（★1-5），不含半星
-- 穿插巴菲特/芒格/段永平/李录的语录点评
+- 모든 보고서는 **한국어**로 쓴다
+- 문체: 직설적이고 날카롭게, 군더더기 없이
+- 데이터에는 출처를 표시하고, 핵심 데이터는 최소 2개 출처로 교차검증한다
+- 추정치에는 반드시 "추정"이라고 표시한다
+- 평점은 ★ 기호(★1~5)를 쓰고 반 개는 쓰지 않는다
+- 버핏/멍거/돤융핑/리루의 어록 논평을 사이사이 넣는다(한국어로 옮겨 싣는다)
 
-## GitHub 操作
+## GitHub 작업
 
-- 本地克隆路径：`~/ai-berkshire/`
-- 远程仓库：`https://github.com/xbtlin/ai-berkshire.git`
-- 推送前先 `git pull --rebase origin main`（远程经常有新提交）
-- commit message 用中文，描述清楚改了什么
-- 不要推送中间过程文件（如 data_collection.md），只推最终报告
+- 로컬 클론 경로: `~/ai-berkshire/`
+- `origin`: 내 포크 `https://github.com/tkimter/ai-berkshire.git` — 푸시는 여기로만 한다
+- `upstream`: 원본 `https://github.com/xbtlin/ai-berkshire.git` — 읽기 전용. 푸시하지 않는다
+- 푸시 전에 `git pull --rebase origin main`
+- 원본의 변경은 통째로 병합하지 않는다(파일명·언어가 달라 충돌한다). `git fetch upstream` 뒤 필요한 변경만 골라 한국어로 옮겨 반영한다
+- 커밋 메시지는 한국어로, 무엇을 바꿨는지 분명히 쓴다
+- 중간 과정 파일(예: data_collection.md)은 푸시하지 않고 최종 보고서만 푸시한다
 
-## 常用命令
+## 자주 쓰는 명령
 
 ```bash
-# 推送报告到GitHub
+# 보고서를 GitHub에 푸시
 cd ~/ai-berkshire
-python3 tools/reports_index.py          # 先刷新研究索引（必做）
-git add reports/xxx.md reports/README.md reports/index.json README.md
-git commit -m "添加xxx报告"
+git add reports/xxx.md                  # 새 보고서를 먼저 스테이징 (색인은 스테이징된 파일만 싣는다)
+python3 tools/reports_index.py          # 연구 색인 갱신 (필수)
+git add reports/README.md reports/index.json README.md
+git commit -m "xxx 보고서 추가"
 git pull --rebase origin main
 git push origin main
 ```
 
 ```bash
-# 只检查索引是否过期，不写盘（CI 也跑这条）
+# 색인이 오래됐는지만 확인하고 파일은 쓰지 않는다
 python3 tools/reports_index.py --check
 ```
 
-## 注意事项
+## 주의 사항
 
-- 市值必须手算校验：股价 × 总股本，与报告市值对比
-- 货币单位要明确（港币/人民币/美元/新台币），防止混淆
-- PE/ROE等指标用 tools/financial_rigor.py 精确计算
-- 台股数据用 tools/twstock_data.py（FinMind）获取，并按 skills/financial-data.md 台股章节交叉验证
-- 报告写完后主动询问是否推送到GitHub
-- **推送前必须跑 `python3 tools/reports_index.py` 刷新索引**，否则 CI 的索引校验会失败
-- 新报告文件名带 `-YYYYMMDD` 后缀、正文首行写 `# 标题`，索引即可自动识别；
-  需要覆盖时在文件头加 YAML front-matter（`title` / `date` / `type`），
-  规范见 `reports/_index/README.md`
-- 新建的**专题目录或筛选池目录**要登记进 `reports/_index/config.json`，否则会被当成公司
+- 시가총액은 반드시 손으로 검산한다: 주가 × 총주식수를 보고서의 시가총액과 대조한다
+- 통화 단위를 분명히 쓴다(홍콩달러/위안화/달러/대만달러/원). 혼동을 막는다
+- PE/ROE 등 지표는 tools/financial_rigor.py로 정밀 계산한다
+- 대만 주식 데이터는 tools/twstock_data.py(FinMind)로 가져오고, skills/financial-data.md의 대만 주식 장에 따라 교차검증한다
+- 보고서를 다 쓰면 GitHub에 푸시할지 먼저 묻는다
+- **푸시 전에 반드시 `python3 tools/reports_index.py`로 색인을 갱신한다.** 하지 않으면 색인 검사(`--check`)가 실패한다
+- 새 보고서는 파일명에 `-YYYYMMDD` 접미를 붙이고 본문 첫 줄을 `# 제목`으로 쓰면 색인이 자동으로 인식한다.
+  덮어써야 하면 파일 맨 앞에 YAML front-matter(`title` / `date` / `type`)를 넣는다.
+  규칙은 `reports/_index/README.md`에 있다
+- 새로 만든 **테마 폴더나 스크리닝 풀 폴더**는 `reports/_index/config.json`에 등록한다. 빠뜨리면 기업으로 처리된다

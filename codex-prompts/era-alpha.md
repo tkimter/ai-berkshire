@@ -1,5 +1,5 @@
 ---
-description: "AI Berkshire slash entry for 时代α捕手：高增长核心资产的识别-验证-持有框架."
+description: "AI Berkshire slash entry for 시대 알파 사냥꾼: 고성장 핵심 자산의 식별-검증-보유 프레임워크."
 argument-hint: $ARGUMENTS
 ---
 

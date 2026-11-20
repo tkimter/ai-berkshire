@@ -1,5 +1,5 @@
 ---
-description: "AI Berkshire slash entry for Income Investment: Durable and Opportunistic Distribution Analysis."
+description: "AI Berkshire slash entry for 인컴 투자: 지속형 및 기회형 분배금 분석."
 argument-hint: $ARGUMENTS
 ---
 

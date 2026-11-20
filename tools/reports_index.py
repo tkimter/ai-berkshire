@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""扫描 reports/ 中已纳入 Git 的报告，生成研究索引。
+"""reports/ 아래 Git에 올라간 보고서를 훑어 연구 색인을 만든다.
 
-产出两份文件：
-  reports/index.json  —— 机器可读清单，供脚本/网页消费
-  reports/README.md   —— 人读索引，GitHub 上的报告入口
+산출물 두 가지:
+  reports/index.json  —— 기계가 읽는 목록. 스크립트·웹페이지용
+  reports/README.md   —— 사람이 읽는 색인. GitHub의 보고서 입구
 
-元数据来源优先级：文件自带 YAML front-matter > 文件名 > 正文 > git 提交时间。
-不修改任何报告文件本身。
-新报告需先 git add；未跟踪、被忽略或仅 intent-to-add 的文件不进入公开索引。
+메타데이터 우선순위: 파일의 YAML front-matter > 파일명 > 본문 > git 커밋 날짜.
+보고서 파일 자체는 수정하지 않는다.
+새 보고서는 먼저 git add 해야 한다. 미추적·무시·intent-to-add 파일은 공개 색인에 넣지 않는다.
 
-用法：
-  python3 tools/reports_index.py            # 生成索引
-  python3 tools/reports_index.py --check     # 只检查是否需要更新（CI 用，不写盘）
+언어: 보고서는 한국어 기준이다. 기존 중국어 보고서도 계속 색인되도록 파일명 키워드는
+한국어·중국어를 모두 인식한다. index.json의 bucket/type 값은 tools/build_site.py가
+그대로 읽으므로 내부 키(중국어)를 유지하고, 사람이 읽는 README에서만 한국어 라벨로 바꿔 보여 준다.
+
+사용법:
+  python3 tools/reports_index.py            # 색인 생성
+  python3 tools/reports_index.py --check     # 갱신 필요 여부만 확인 (CI용, 파일을 쓰지 않음)
 """
 import json
 import os
@@ -25,20 +29,40 @@ REPORTS = os.path.join(ROOT, "reports")
 CONFIG = os.path.join(REPORTS, "_index", "config.json")
 
 DATE_IN_NAME = re.compile(r"(20[2-3]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])")
-DATE_IN_BODY = re.compile(r"(20[2-3]\d)[-/年](\d{1,2})[-/月](\d{1,2})")
+DATE_IN_BODY = re.compile(r"(20[2-3]\d)\s*[-/年년]\s*(\d{1,2})\s*[-/月월]\s*(\d{1,2})")
 H1 = re.compile(r"^#\s+(.+?)\s*$")
 
-# 报告类型：按顺序匹配，先命中先算
+# 보고서 유형: 위에서부터 차례로 맞춰 보고 먼저 걸린 것으로 정한다.
+# 왼쪽 라벨은 index.json에 들어가는 내부 키(변경 금지, build_site.py가 사용), 키워드는 한·중·영 모두.
 TYPE_RULES = [
-    ("底稿", ["研究底稿", "核验", "评审", "verify", "底稿", "对账"]),  # 审计/复核类成品报告不在此列，中间产物由 is_draft 识别
-    ("财报", ["earnings", "财报", "中报", "年报", "季报", "业绩", "电话会", "q1", "q2", "q3", "q4"]),
-    ("公众号", ["公众号", "wechat", "推文"]),
-    ("深度系列", ["看懂", "深度研究", "deep-dive", "深度投研"]),
-    ("横评对比", ["横评", "对比", "vs", "对决", "pk", "换仓", "轮动"]),
-    ("组织管理", ["7s", "管理层", "组织", "management"]),
-    ("估值仓位", ["估值", "赔率", "凯利", "仓位", "valuation", "fair_value", "终值"]),
-    ("筛选", ["funnel", "筛选", "召回", "screen", "候选池"]),
+    # 감사/재검토류 완성 보고서는 여기 해당하지 않는다. 중간 산출물은 is_draft가 가린다
+    ("底稿", ["研究底稿", "核验", "评审", "verify", "底稿", "对账",
+              "연구초안", "초안", "독자리뷰", "검증기록", "대사"]),
+    ("财报", ["earnings", "财报", "中报", "年报", "季报", "业绩", "电话会", "q1", "q2", "q3", "q4",
+              "실적", "분기보고", "반기보고", "사업보고", "컨퍼런스콜"]),
+    ("公众号", ["公众号", "wechat", "推文", "공식계정"]),
+    ("深度系列", ["看懂", "深度研究", "deep-dive", "深度投研", "제대로알기", "심층연구"]),
+    ("横评对比", ["横评", "对比", "vs", "对决", "pk", "换仓", "轮动", "비교", "대결", "로테이션"]),
+    ("组织管理", ["7s", "管理层", "组织", "management", "경영진", "조직"]),
+    ("估值仓位", ["估值", "赔率", "凯利", "仓位", "valuation", "fair_value", "终值",
+                  "밸류에이션", "배당률", "켈리", "비중", "터미널밸류", "종말가치"]),
+    ("筛选", ["funnel", "筛选", "召回", "screen", "候选池", "스크리닝", "후보풀", "퍼널"]),
 ]
+
+# 사람이 읽는 색인(reports/README.md, 루트 README)에 쓰는 한국어 표시 라벨
+TYPE_KO = {
+    "研究": "연구", "财报": "실적", "公众号": "공식계정", "深度系列": "심층시리즈",
+    "横评对比": "비교", "组织管理": "조직·경영", "估值仓位": "밸류·비중",
+    "筛选": "스크리닝", "底稿": "초안",
+}
+# front-matter의 type: 은 한국어 라벨로 써도 내부 키로 바꿔 받는다
+TYPE_FROM_KO = {v: k for k, v in TYPE_KO.items()}
+WECHAT_MARKS = ("公众号", "공식계정")
+ROOT_GROUP = "종합·비교"
+
+
+def type_label(t):
+    return TYPE_KO.get(t, t)
 
 
 def load_config():
@@ -47,23 +71,23 @@ def load_config():
 
 
 def git_report_paths():
-    """Git 暂存区里的路径；不把尚未加入提交的本地稿件发布到索引。"""
+    """Git 스테이징 영역의 경로. 아직 커밋 대상이 아닌 로컬 원고는 색인에 올리지 않는다."""
     try:
         raw = subprocess.check_output(
             ["git", "ls-files", "--cached", "-z", "--", "reports/"],
             cwd=ROOT, stderr=subprocess.DEVNULL)
-        # git add -N 会出现在 ls-files 中，但实际内容不会进入下一次提交。
+        # git add -N 한 파일은 ls-files에 나오지만 실제 내용은 다음 커밋에 들어가지 않는다.
         intent = subprocess.check_output(
             ["git", "diff", "--name-only", "--diff-filter=A", "-z", "--", "reports/"],
             cwd=ROOT, stderr=subprocess.DEVNULL)
     except (OSError, subprocess.CalledProcessError) as exc:
-        raise RuntimeError("无法读取 Git 暂存区，已停止生成，避免发布未提交的本地文件") from exc
+        raise RuntimeError("Git 스테이징 영역을 읽을 수 없어 생성을 중단한다. 커밋되지 않은 로컬 파일이 공개되는 것을 막기 위해서다") from exc
     paths = {os.fsdecode(p) for p in raw.split(b"\0") if p}
     return paths - {os.fsdecode(p) for p in intent.split(b"\0") if p}
 
 
 def git_dates():
-    """一次遍历拿到每个文件的最近提交日期。"""
+    """한 번 훑어서 파일별 최근 커밋 날짜를 얻는다."""
     out = {}
     try:
         raw = subprocess.check_output(
@@ -83,7 +107,7 @@ def git_dates():
 
 
 def parse_front_matter(lines):
-    """极简 YAML front-matter 解析，只认首行 --- 到次个 --- 之间的 key: value。"""
+    """아주 단순한 YAML front-matter 해석. 첫 줄 --- 부터 다음 --- 사이의 key: value만 읽는다."""
     if not lines or lines[0].strip() != "---":
         return {}, 0
     meta = {}
@@ -113,15 +137,15 @@ def guess_type(name, relpath):
         for k in keys:
             if k in hay:
                 return label
-    return "研究"
+    return "研究"  # 내부 키. 표시 라벨은 TYPE_KO
 
 
 def is_draft(relr, cfg):
-    """中间产物判定：证据、审计、复算、底稿等不进人读索引。规则见 config.json 的 drafts。"""
+    """중간 산출물 판정: 증빙·감사·재계산·초안 등은 사람이 읽는 색인에 넣지 않는다. 규칙은 config.json의 drafts 참고."""
     rules = cfg.get("drafts") or {}
     parts = relr.split("/")
     stem = re.sub(r"\.md$", "", parts[-1])
-    if "公众号" in stem:
+    if any(mark in stem for mark in WECHAT_MARKS):
         return False
     dirs = [d.lower() for d in parts[:-1]]
     draft_dirs = {d.lower() for d in rules.get("dirs", [])}
@@ -143,15 +167,15 @@ def guess_date(meta, filename, parent, head, gitmap, relpath):
     for src in (filename, parent):
         m = DATE_IN_NAME.search(src)
         if m:
-            return "%s-%s-%s" % m.groups(), "文件名"
+            return "%s-%s-%s" % m.groups(), "파일명"
     for line in head[:15]:
         m = DATE_IN_BODY.search(line)
         if m:
             y, mo, dy = m.groups()
-            return "%s-%02d-%02d" % (y, int(mo), int(dy)), "正文"
+            return "%s-%02d-%02d" % (y, int(mo), int(dy)), "본문"
     if relpath in gitmap:
         return gitmap[relpath], "git"
-    return "", "缺失"
+    return "", "없음"
 
 
 def bucket_of(top, cfg):
@@ -205,11 +229,12 @@ def collect(cfg, gitmap):
                 if bucket == "公司" and top not in known and top not in cfg["aliases"]:
                     unknown_dirs.add(top)
             else:
-                bucket, group = "专题", "综合与横评"
+                bucket, group = "专题", ROOT_GROUP
 
             date, dsrc = guess_date(meta, fn, parts[-2] if len(parts) > 1 else "", head, gitmap, rel)
             series = parts[1] if len(parts) > 2 else ""
             rtype = meta.get("type") or ("底稿" if is_draft(relr, cfg) else guess_type(fn, relr))
+            rtype = TYPE_FROM_KO.get(rtype, rtype)
             items.append(OrderedDict([
                 ("title", title),
                 ("path", rel),
@@ -234,7 +259,7 @@ UNSAFE = {"%": "%25", " ": "%20", "(": "%28", ")": "%29", "#": "%23", "?": "%3F"
 
 
 def url_path(path):
-    """只转义会破坏 Markdown 链接的字符，中文保持原样以便肉眼核对。"""
+    """Markdown 링크를 깨뜨리는 문자만 이스케이프한다. 한글·한자는 눈으로 대조할 수 있게 그대로 둔다."""
     return "".join(UNSAFE.get(c, c) for c in path)
 
 
@@ -244,7 +269,7 @@ def md_link(text, path):
 
 
 def published(items):
-    """人读索引只收成品报告；底稿、证据、审计等中间产物只留在 index.json。"""
+    """사람이 읽는 색인에는 완성 보고서만 싣는다. 초안·증빙·감사 등 중간 산출물은 index.json에만 남긴다."""
     return [i for i in items if i["type"] != "底稿"]
 
 
@@ -256,24 +281,24 @@ def render(items, cfg):
 
     latest = max((i["date"] for i in items if i["date"]), default="")
     L = []
-    L.append("# 研究报告索引")
+    L.append("# 연구 보고서 색인")
     L.append("")
-    L.append("> 本文件由 `tools/reports_index.py` 自动生成，请勿手工编辑。")
-    L.append("> 新增报告先 `git add`，再运行 `python3 tools/reports_index.py`，将报告与索引一并提交。")
-    L.append("> 只收录成品报告；证据、审计、复算、底稿等中间产物不在此列，完整清单见 `index.json`。")
+    L.append("> 이 파일은 `tools/reports_index.py`가 자동 생성한다. 손으로 고치지 않는다.")
+    L.append("> 새 보고서는 먼저 `git add` 한 뒤 `python3 tools/reports_index.py`를 실행하고, 보고서와 색인을 함께 커밋한다.")
+    L.append("> 완성 보고서만 싣는다. 증빙·감사·재계산·초안 등 중간 산출물은 여기에 없으며 전체 목록은 `index.json`에 있다.")
     L.append("")
-    L.append("**%d 份报告** · **%d 家公司** · **%d 个专题** · 最近更新 %s" % (
+    L.append("**보고서 %d건** · **기업 %d곳** · **테마 %d개** · 최근 업데이트 %s" % (
         len(items), len(by_bucket["公司"]), len(by_bucket["专题"]), latest or "—"))
     L.append("")
-    L.append("[最近更新](#最近更新) · [按公司](#按公司) · [专题研究](#专题研究) · "
-             "[大师研究](#大师研究) · [筛选池](#筛选池)")
+    L.append("[최근 업데이트](#최근-업데이트) · [기업별](#기업별) · [테마 연구](#테마-연구) · "
+             "[대가 연구](#대가-연구) · [스크리닝 풀](#스크리닝-풀)")
     L.append("")
     L.append("---")
     L.append("")
 
-    L.append("## 最近更新")
+    L.append("## 최근 업데이트")
     L.append("")
-    L.append("| 日期 | 报告 | 归属 | 类型 |")
+    L.append("| 날짜 | 보고서 | 소속 | 유형 |")
     L.append("|------|------|------|------|")
     seen = defaultdict(int)
     shown = []
@@ -290,7 +315,7 @@ def render(items, cfg):
     for it in shown:
         L.append("| %s | %s | %s | %s |" % (
             it["date"] or "—", md_link(it["title"], it["path"]),
-            display_name(it["group"]), it["type"]))
+            display_name(it["group"]), type_label(it["type"])))
     L.append("")
     L.append("---")
     L.append("")
@@ -309,7 +334,7 @@ def render(items, cfg):
             lst = sorted(lst, key=lambda x: (x["date"], x["title"]), reverse=True)
             last = lst[0]["date"] or "—"
             L.append("<details>")
-            L.append("<summary><b>%s</b> · %d 份 · 最近 %s</summary>" % (
+            L.append("<summary><b>%s</b> · %d건 · 최근 %s</summary>" % (
                 display_name(name), len(lst), last))
             L.append("")
             cur_series = None
@@ -322,24 +347,24 @@ def render(items, cfg):
                 elif not it["series"] and cur_series is not None:
                     cur_series = None
                     L.append("")
-                L.append("- `%s` %s — %s" % (it["date"] or "  —  ", md_link(it["title"], it["path"]), it["type"]))
+                L.append("- `%s` %s — %s" % (it["date"] or "  —  ", md_link(it["title"], it["path"]), type_label(it["type"])))
             L.append("")
             L.append("</details>")
             L.append("")
         L.append("---")
         L.append("")
 
-    section("按公司", "公司")
-    section("专题研究", "专题")
-    section("大师研究", "大师研究")
+    section("기업별", "公司")
+    section("테마 연구", "专题")
+    section("대가 연구", "大师研究")
 
     screens = by_bucket.get("筛选池", {})
     if screens:
-        L.append("## 筛选池")
+        L.append("## 스크리닝 풀")
         L.append("")
-        L.append("> 以下是筛选与推演的**中间产物**，不是成品报告，供复现与追溯用。")
+        L.append("> 아래는 스크리닝과 추론의 **중간 산출물**이며 완성 보고서가 아니다. 재현과 추적용이다.")
         L.append("")
-        L.append("| 池子 | 文件数 | 最近更新 |")
+        L.append("| 풀 | 파일 수 | 최근 업데이트 |")
         L.append("|------|--------|----------|")
         for name, lst in sorted(screens.items(), key=lambda kv: -len(kv[1])):
             last = max((x["date"] for x in lst if x["date"]), default="—")
@@ -350,9 +375,9 @@ def render(items, cfg):
 
 
 ROOT_README = os.path.join(ROOT, "README.md")
-MARK_START = "<!-- REPORTS-INDEX:START 由 tools/reports_index.py 自动更新，勿手改 -->"
+MARK_START = "<!-- REPORTS-INDEX:START tools/reports_index.py가 자동 갱신한다. 손으로 고치지 않는다 -->"
 MARK_END = "<!-- REPORTS-INDEX:END -->"
-BANNER_START = "<!-- REPORTS-BANNER:START 由 tools/reports_index.py 自动更新，勿手改 -->"
+BANNER_START = "<!-- REPORTS-BANNER:START tools/reports_index.py가 자동 갱신한다. 손으로 고치지 않는다 -->"
 BANNER_END = "<!-- REPORTS-BANNER:END -->"
 
 
@@ -367,15 +392,12 @@ def index_stats(items):
 
 
 def root_banner_block(items):
-    """首屏横幅：仓库日更内容的入口，位置在标题区，不在正文深处。"""
+    """첫 화면 배너: 매일 갱신되는 내용의 입구. 본문 깊숙한 곳이 아니라 제목 영역에 둔다."""
     total, companies, themes, latest = index_stats(items)
     return "\n".join([
         BANNER_START,
         "",
-        "> 📖 **想读报告，用 [阅读站](https://xbtlin.github.io/ai-berkshire/)**：成品报告按公司、专题、时间整理，"
-        "电脑和手机都好读，可搜索、记住阅读进度。",
-        ">",
-        "> 📊 全部 %d 份报告（含底稿）· %d 家公司 · %d 个专题，GitHub 上的完整目录见 [研究报告索引](reports/README.md)，更新至 %s。"
+        "> 📊 보고서 %d건 · 기업 %d곳 · 테마 %d개. 전체 목록은 [연구 보고서 색인](reports/README.md)에 있다. 최근 업데이트 %s."
         % (total, companies, themes, latest),
         "",
         BANNER_END,
@@ -383,17 +405,17 @@ def root_banner_block(items):
 
 
 def root_readme_block(items):
-    """生成根 README 里的『研究索引』入口块。"""
+    """루트 README의 연구 색인 입구 블록을 만든다."""
     total, companies, themes, latest = index_stats(items)
     fresh = [i for i in published(items) if i["bucket"] != "筛选池"][:8]
 
     L = [MARK_START, ""]
-    L.append("**📊 [全部研究索引 →](reports/README.md)** ｜ %d 份报告 · %d 家公司 · %d 个专题 · 更新至 %s"
+    L.append("**📊 [전체 연구 색인 →](reports/README.md)** ｜ 보고서 %d건 · 기업 %d곳 · 테마 %d개 · 최근 업데이트 %s"
              % (total, companies, themes, latest))
     L.append("")
-    L.append("最近更新：")
+    L.append("최근 업데이트:")
     L.append("")
-    L.append("| 日期 | 报告 | 归属 |")
+    L.append("| 날짜 | 보고서 | 소속 |")
     L.append("|------|------|------|")
     seen = defaultdict(int)
     rows = 0
@@ -457,9 +479,9 @@ def main():
             if old != new:
                 stale.append(os.path.basename(p))
         if stale:
-            print("索引已过期，请运行 python3 tools/reports_index.py：" + "、".join(stale))
+            print("색인이 오래됐다. python3 tools/reports_index.py 를 실행한다: " + ", ".join(stale))
             return 1
-        print("索引是最新的")
+        print("색인이 최신 상태다")
         return 0
 
     with open(index_path, "w", encoding="utf-8") as f:
@@ -469,17 +491,17 @@ def main():
     if root_new is not None and root_new != root_old:
         with open(ROOT_README, "w", encoding="utf-8") as f:
             f.write(root_new)
-        print("已刷新根 README 的研究索引入口块")
+        print("루트 README의 연구 색인 블록을 갱신했다")
 
     missing = [i for i in items if not i["date"]]
-    print("已索引 %d 份报告 -> reports/README.md、reports/index.json（其中成品 %d 份，底稿等中间产物 %d 份只进 index.json）"
+    print("보고서 %d건 색인 완료 -> reports/README.md, reports/index.json (완성 보고서 %d건, 초안 등 중간 산출물 %d건은 index.json에만 기록)"
           % (len(items), len(published(items)), len(items) - len(published(items))))
     if missing:
-        print("  无法确定日期：%d 份" % len(missing))
+        print("  날짜를 알 수 없음: %d건" % len(missing))
     if excluded:
-        print("  未纳入 Git 的本地报告（含被忽略文件）已排除：%d 份；如需发布，请先 git add 再生成索引" % len(excluded))
+        print("  Git에 없는 로컬 보고서(무시 파일 포함) 제외: %d건. 공개하려면 먼저 git add 한 뒤 색인을 다시 만든다" % len(excluded))
     if unknown:
-        print("  未在 config.json 的 companies 名单里的新目录（默认按公司处理）：%s" % "、".join(unknown))
+        print("  config.json의 companies 목록에 없는 새 폴더(기본값인 기업으로 처리): %s" % ", ".join(unknown))
     return 0
 
 

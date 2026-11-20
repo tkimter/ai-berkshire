@@ -1,145 +1,145 @@
-# Income Investment: Durable and Opportunistic Distribution Analysis
+# 인컴 투자: 지속형 및 기회형 분배금 분석
 
-Analyze `$ARGUMENTS` to answer:
+`$ARGUMENTS` 를 분석해 다음 질문에 답한다:
 
-> Can this company produce sufficiently durable and attractive distributable income to justify a portfolio role, either as a long-term income conviction or as an opportunistic yield position?
+> 이 회사는 장기 인컴 확신 종목으로든 기회형 수익률 포지션으로든, 포트폴리오 내 역할을 정당화할 만큼 충분히 지속 가능하고 매력적인 분배 가능 소득을 만들어 낼 수 있는가?
 
-Never treat a high displayed yield as evidence of a good opportunity. This workflow is for learning and research, not personalized investment advice.
+표시된 수익률이 높다는 것을 좋은 기회의 증거로 취급하지 않는다. 이 워크플로는 학습과 연구를 위한 것이며, 개인 맞춤형 투자 자문이 아니다.
 
-## Input
+## 입력
 
-Use this command form:
+다음 명령 형식을 사용한다:
 
 ```text
 /income-investment "<company or ticker>" [mode=new|existing] [role=core-income|opportunistic-income|unspecified] [quantity=...] [cost_basis=...] [portfolio_weight=...] [target_yield=...] [tax_residence=...] [portfolio_file=...] [horizon=...]
 ```
 
-The company or ticker is required. All other fields are optional. Accept equivalent natural-language input. Do not invent missing values: mark them `Unknown` or `Not calculable` and state the consequence. In particular, do not estimate net income without the tax residence, account type, applicable treaty, and confirmed withholding treatment.
+회사명 또는 티커는 필수다. 나머지 필드는 모두 선택이다. 같은 뜻의 자연어 입력도 받는다. 빠진 값을 지어내지 않는다: `Unknown` 또는 `Not calculable` 로 표시하고 그 영향을 밝힌다. 특히 세법상 거주지, 계좌 유형, 적용 조세조약, 확인된 원천징수 처리가 없으면 세후 소득을 추정하지 않는다.
 
-## Related Workflows
+## 관련 워크플로
 
-Use or refer to existing workflows instead of reproducing them:
+기존 워크플로를 다시 만들지 말고 사용하거나 참조한다:
 
-| Need | Workflow |
+| 필요 | 워크플로 |
 |---|---|
-| Verified financial data and cross-source reconciliation | `financial-data` |
-| Full general fundamental research | `investment-research` |
-| Final pre-purchase decision | `investment-checklist` |
-| Portfolio fit, concentration, and sizing | `portfolio-review` |
-| Post-decision monitoring | `thesis-tracker` |
-| Update after reported results | `earnings-review` |
-| Rapid analysis of a discrete event | `news-pulse` |
+| 검증된 재무 데이터와 출처 간 대사 | `financial-data` |
+| 전체 일반 펀더멘털 연구 | `investment-research` |
+| 매수 전 최종 결정 | `investment-checklist` |
+| 포트폴리오 적합성, 집중도, 비중 결정 | `portfolio-review` |
+| 결정 이후 모니터링 | `thesis-tracker` |
+| 실적 발표 후 업데이트 | `earnings-review` |
+| 개별 이벤트의 신속 분석 | `news-pulse` |
 
-`income-investment` owns the income-specific decision. It must not silently override a current `portfolio-review` conclusion.
+`income-investment` 는 인컴에 특화된 결정을 담당한다. 현행 `portfolio-review` 결론을 말없이 뒤집어서는 안 된다.
 
-## Research Discipline
+## 연구 규율
 
-1. Run `date` before research. Put the data cutoff date in the report header.
-2. Prefer annual and interim reports, earnings releases, investor documents, regulatory filings, official releases, and official exchange data, in that order. Use secondary sources only to fill gaps and label them as secondary.
-3. Apply `skills/financial-data.md`: verify decision-critical financial data with at least two independent sources when available and flag discrepancies above 1%.
-4. Date or period-label every time-sensitive figure. Separate every material statement as **Verified fact**, **Estimate**, **Assumption**, or **Analytical judgment**.
-5. Use `python3 tools/financial_rigor.py` for exact payout, yield, valuation, market-cap, portfolio-income, and scenario arithmetic. Never rely on mental arithmetic for a decision-sensitive result.
-6. After saving the report, run the `tools/report_audit.py extract` and `verdict` workflow. A report that fails audit is a draft, not publishable research.
+1. 연구 전에 `date` 를 실행한다. 데이터 기준일을 보고서 머리말에 적는다.
+2. 연차·반기 보고서, 실적 발표 자료, 투자자 문서, 규제 공시, 공식 발표, 거래소 공식 데이터를 이 순서대로 우선한다. 2차 출처는 공백을 메우는 데만 쓰고 2차 출처라고 표시한다.
+3. `skills/financial-data.md` 를 적용한다: 결정에 핵심적인 재무 데이터는 가능하면 독립된 출처 두 곳 이상으로 검증하고, 1%를 넘는 차이는 표시한다.
+4. 시점에 민감한 수치에는 모두 날짜나 기간을 표기한다. 중요한 진술은 모두 **검증된 사실**, **추정**, **가정**, **분석적 판단**으로 구분한다.
+5. 배당성향, 수익률, 밸류에이션, 시가총액, 포트폴리오 소득, 시나리오 계산은 `python3 tools/financial_rigor.py` 로 정확히 계산한다. 결정에 영향을 주는 결과를 암산에 맡기지 않는다.
+6. 보고서를 저장한 뒤 `tools/report_audit.py extract` 및 `verdict` 워크플로를 실행한다. 감사를 통과하지 못한 보고서는 초안이지, 발행 가능한 연구가 아니다.
 
-## Execution Workflow
+## 실행 워크플로
 
-### 1. Parse the Request and Establish Data Quality
+### 1. 요청 해석 및 데이터 품질 확정
 
-- Resolve the security, listing, currency, distribution currency, mode, desired role, and optional portfolio inputs.
-- State which gross-income, net-income, yield-on-cost, portfolio contribution, and after-trade calculations are possible.
-- Rate evidence quality `A` (complete primary material), `B` (partial primary material), or `C` (mostly secondary/incomplete). Materially insufficient fundamentals trigger the `INSUFFICIENT DATA` gate.
+- 증권, 상장 시장, 통화, 분배 통화, 모드, 희망 역할, 선택적 포트폴리오 입력을 확정한다.
+- 세전 소득, 세후 소득, 매입가 대비 수익률, 포트폴리오 기여도, 거래 후 계산 중 어떤 것이 가능한지 밝힌다.
+- 증거 품질을 `A`(1차 자료 완비), `B`(1차 자료 일부), `C`(대부분 2차 자료/불완전)로 평가한다. 펀더멘털이 실질적으로 부족하면 `INSUFFICIENT DATA` 게이트가 발동한다.
 
-### 2. Understand the Distribution
+### 2. 분배금 이해
 
-Cover at least five years when available:
+가능하면 최소 5년을 다룬다:
 
-- frequency; ordinary, special, or variable status; payment currency;
-- annual dividend per share and total distributions;
-- counts of increases, holds, cuts, and suspensions;
-- dividend CAGR, with the exact period and treatment of special dividends;
-- indicative announcement, ex-dividend, record, and payment dates.
+- 지급 빈도, 정기·특별·변동 여부, 지급 통화
+- 연간 주당 배당금과 총 분배액
+- 인상, 동결, 삭감, 중단 횟수
+- 배당 CAGR(정확한 기간과 특별배당 처리 방식 명시)
+- 발표일, 배당락일, 기준일, 지급일의 대략적 일정
 
-Explain that waiting for the ex-dividend date is not a free gain: the share price theoretically adjusts by the distribution. The calendar may inform execution timing, but must never justify buying a weak company or delaying a necessary sale.
+배당락일을 기다리는 것이 공짜 이익이 아님을 설명한다: 주가는 이론적으로 분배금만큼 조정된다. 일정은 실행 타이밍에 참고할 수 있지만, 부실한 회사를 사거나 필요한 매도를 미루는 근거가 되어서는 안 된다.
 
-### 3. Trace the Cash Available for Distribution
+### 3. 분배 가능 현금 추적
 
-Analyze net-income payout, free-cash-flow payout, cash flow after necessary investment, cash-flow stability and quality, interest coverage, net debt, debt maturities, refinancing needs, maintenance and growth capex, relevant off-balance-sheet commitments, and buybacks competing with dividends.
+순이익 기준 배당성향, 잉여현금흐름 기준 배당성향, 필수 투자 후 현금흐름, 현금흐름의 안정성과 질, 이자보상배율, 순차입금, 부채 만기, 차환 필요액, 유지보수 및 성장 capex, 관련 부외 약정, 배당과 경합하는 자사주 매입을 분석한다.
 
-Do not mechanically apply an EPS payout ratio across sectors:
+EPS 배당성향을 모든 섹터에 기계적으로 적용하지 않는다:
 
-| Sector | Required sector measures |
+| 섹터 | 필수 섹터 지표 |
 |---|---|
-| REIT / SIIC | FFO, AFFO, occupancy, LTV |
-| Bank | CET1, distributable earnings, regulatory constraints |
-| Insurer | Solvency and capital generation |
-| BDC | NII, NAV, non-accruals |
-| Resources | Mid-cycle cash flow and variable-distribution policy |
-| Telecom / utility | Capex, debt, and FCF coverage |
+| REIT / SIIC | FFO, AFFO, 임대율, LTV |
+| 은행 | CET1, 분배 가능 이익, 규제상 제약 |
+| 보험사 | 지급여력과 자본 창출 |
+| BDC | NII, NAV, 무수익 여신(non-accruals) |
+| 자원 | 사이클 중간 현금흐름과 변동 분배 정책 |
+| 통신 / 유틸리티 | Capex, 부채, FCF 커버리지 |
 
-### 4. Test Quality and Durability
+### 4. 질과 지속성 검증
 
-Assess the business model, moat, pricing power, cyclicality, rate/currency/commodity sensitivity, income predictability, capital allocation, management quality, and the ability to maintain the distribution in a downside case. Distinguish accounting profit from repeatable distributable cash.
+비즈니스 모델, 해자, 가격 결정력, 경기 민감도, 금리·환율·원자재 민감도, 소득 예측 가능성, 자본 배분, 경영진의 질, 하방 시나리오에서 분배금을 유지할 능력을 평가한다. 회계상 이익과 반복 가능한 분배 가능 현금을 구분한다.
 
-### 5. Value the Income Stream
+### 5. 소득 흐름의 밸류에이션
 
-Analyze current yield, historical average yield, appropriate sector multiples, FCF yield, a reasonable intrinsic-value range, margin of safety, and combined price-decline/dividend-cut scenarios. Yield on cost is retrospective information only and never a reason to keep a position.
+현재 수익률, 과거 평균 수익률, 적절한 섹터 멀티플, FCF 수익률, 합리적인 내재가치 범위, 안전마진, 주가 하락과 배당 삭감이 결합된 시나리오를 분석한다. 매입가 대비 수익률은 과거를 돌아보는 정보일 뿐, 포지션을 유지할 이유가 되지 않는다.
 
-### 6. Calculate Usable Income
+### 6. 실제 쓸 수 있는 소득 계산
 
-Only when inputs support it, calculate annual gross dividend, gross dividend per payment frequency, known source withholding, estimated net income, contribution to portfolio income, and annual income after the proposed trade. If tax or account information is incomplete, show gross income and explain exactly why net income is not calculable. Label treaty rates and tax treatments with jurisdiction, account assumptions, and effective date.
+입력이 뒷받침할 때에만 연간 세전 배당금, 지급 빈도별 세전 배당금, 확인된 원천징수액, 추정 세후 소득, 포트폴리오 소득 기여도, 제안된 거래 후 연간 소득을 계산한다. 세금이나 계좌 정보가 불완전하면 세전 소득을 제시하고 세후 소득을 계산할 수 없는 이유를 정확히 설명한다. 조약 세율과 세무 처리에는 관할, 계좌 가정, 적용 기준일을 표기한다.
 
-### 7. Check Portfolio Fit
+### 7. 포트폴리오 적합성 점검
 
-If a portfolio is provided:
+포트폴리오가 제공된 경우:
 
-- determine current and proposed weight;
-- examine sector and geographic concentration, duplicated risks, and income dependence on one industry;
-- distinguish capital diversification from dividend diversification;
-- read the latest relevant `portfolio-review` report when available.
+- 현재 비중과 제안 비중을 산정한다
+- 섹터·지역 집중도, 중복된 리스크, 소득의 단일 산업 의존도를 살핀다
+- 자본 분산과 배당 분산을 구분한다
+- 가능하면 최신 관련 `portfolio-review` 보고서를 읽는다
 
-If conclusions diverge, show both conclusions, explain why, and separate company quality from allocation fit. A sound income security may still merit `HOLD – DO NOT ADD`, `REDUCE`, or `WATCHLIST` because of portfolio concentration.
+결론이 엇갈리면 두 결론을 모두 제시하고 이유를 설명하며, 회사의 질과 배분 적합성을 분리한다. 건전한 인컴 종목이라도 포트폴리오 집중도 때문에 `HOLD – DO NOT ADD`, `REDUCE`, `WATCHLIST` 가 타당할 수 있다.
 
-When data permit, show expected gross income by month. Never recommend an inferior company to fill an empty month; quarterly payers can be combined to create monthly cash flow without requiring monthly payers.
+데이터가 허용하면 월별 예상 세전 소득을 제시한다. 비어 있는 달을 채우려고 열등한 회사를 추천하지 않는다. 분기 배당 종목을 조합하면 월 배당 종목 없이도 매달 현금흐름을 만들 수 있다.
 
-### 8. Build Three Scenarios
+### 8. 3개 시나리오 구성
 
-Provide base, adverse, and severe cases. Each must state operating assumptions, distributable cash flow, payout coverage, balance-sheet/refinancing effect, dividend outcome, and valuation implication. The adverse and severe cases must explicitly test a dividend cut rather than assuming the dividend is fixed.
+기본, 부정적, 심각 시나리오를 제시한다. 각 시나리오에는 영업 가정, 분배 가능 현금흐름, 배당 커버리지, 재무상태표·차환 영향, 배당 결과, 밸류에이션 함의를 반드시 밝힌다. 부정적·심각 시나리오는 배당이 고정되어 있다고 가정하지 말고 배당 삭감을 명시적으로 검증해야 한다.
 
-## Classification, Gates, and Verdict
+## 분류, 게이트, 판정
 
-First classify the income profile:
+먼저 인컴 프로파일을 분류한다:
 
-- **Conviction + durable income**: quality business, sustainable and potentially growing dividend, plausible long holding period.
-- **Opportunistic income**: temporary yield or discount with explicit entry, monitoring, holding-period, and exit rules.
-- **Yield trap**: recurring lack of coverage, incompatible leverage/investment needs, structural decline, or yield driven mainly by a falling price.
-- **Unsuitable for income**: no meaningful distribution, marginal yield, insufficient evidence, or shareholder returns primarily delivered another way.
+- **확신 + 지속형 인컴**: 우량한 사업, 지속 가능하고 성장 여지가 있는 배당, 장기 보유가 타당함.
+- **기회형 인컴**: 일시적 수익률 또는 할인. 명시적인 진입·모니터링·보유 기간·청산 규칙이 따른다.
+- **수익률 함정**: 반복되는 커버리지 부족, 양립할 수 없는 레버리지·투자 수요, 구조적 쇠퇴, 또는 주가 하락이 주로 만들어 낸 수익률.
+- **인컴에 부적합**: 의미 있는 분배금 없음, 미미한 수익률, 증거 부족, 또는 주주환원이 주로 다른 방식으로 이뤄짐.
 
-Use this qualitative scorecard; do not calculate a numeric average:
+다음 정성 평가표를 사용한다. 수치 평균은 계산하지 않는다:
 
-| Dimension | Rating (`Strong`, `Adequate`, `Weak`, `Critical`, `Unknown`) | Evidence |
+| 차원 | 등급 (`Strong`, `Adequate`, `Weak`, `Critical`, `Unknown`) | 근거 |
 |---|---|---|
-| Business quality | | |
-| Cash-flow visibility | | |
-| Dividend coverage | | |
-| Balance-sheet strength | | |
-| Distribution history | | |
-| Dividend growth potential | | |
-| Valuation | | |
-| Cyclicality | | |
-| Cut risk | | |
-| Portfolio fit | | |
+| 사업의 질 | | |
+| 현금흐름 가시성 | | |
+| 배당 커버리지 | | |
+| 재무상태표 건전성 | | |
+| 분배 이력 | | |
+| 배당 성장 잠재력 | | |
+| 밸류에이션 | | |
+| 경기 민감도 | | |
+| 삭감 리스크 | | |
+| 포트폴리오 적합성 | | |
 
-Check these blocking gates before the verdict:
+판정 전에 다음 차단 게이트를 점검한다:
 
-- recurring uncovered distribution;
-- critical debt or refinancing risk;
-- structural business deterioration;
-- insufficient fundamental data;
-- material governance or integrity concern.
+- 반복적으로 커버되지 않는 분배금
+- 치명적인 부채 또는 차환 리스크
+- 사업의 구조적 악화
+- 펀더멘털 데이터 부족
+- 중대한 지배구조 또는 정직성 우려
 
-A failed safety, debt, deterioration, or integrity gate overrides the scorecard and normally requires `REJECT / YIELD TRAP` (or `REDUCE` for an existing position when immediate disposal cannot be concluded from available portfolio facts). The insufficient-data gate requires `INSUFFICIENT DATA`. Do not use a score to offset a failed gate.
+안전성, 부채, 악화, 정직성 게이트 중 하나라도 통과하지 못하면 평가표보다 우선하며, 통상 `REJECT / YIELD TRAP` 이 요구된다(기존 포지션인데 주어진 포트폴리오 사실만으로 즉시 처분을 결론 내릴 수 없으면 `REDUCE`). 데이터 부족 게이트는 `INSUFFICIENT DATA` 를 요구한다. 통과하지 못한 게이트를 점수로 상쇄하지 않는다.
 
-Return exactly one verdict:
+정확히 하나의 판정을 낸다:
 
 - `CORE INCOME`
 - `OPPORTUNISTIC INCOME`
@@ -149,39 +149,39 @@ Return exactly one verdict:
 - `REJECT / YIELD TRAP`
 - `INSUFFICIENT DATA`
 
-For the verdict provide: possible portfolio role, primary reason, primary risk, entry conditions, a position-size range to study (never universally suitable), reinforcement conditions, reduction/exit criteria, monitoring indicators, and confidence. Do not give a firm personalized recommendation when portfolio, tax, or risk-tolerance information is insufficient.
+판정에는 다음을 제시한다: 가능한 포트폴리오 역할, 주된 이유, 주된 리스크, 진입 조건, 검토해 볼 포지션 규모 범위(누구에게나 맞는 것은 아니다), 비중 확대 조건, 축소·청산 기준, 모니터링 지표, 신뢰도. 포트폴리오, 세금, 위험 감내도 정보가 부족하면 단정적인 개인 맞춤형 권고를 하지 않는다.
 
-## Required Report Format
+## 필수 보고서 형식
 
-Use these headings exactly once and avoid repeating the same analysis:
+다음 제목을 각각 정확히 한 번씩 사용하고, 같은 분석을 반복하지 않는다:
 
-1. Executive summary
-2. Verdict and category
-3. Possible portfolio role
-4. Business and source of distributed cash
-5. Dividend history and calendar
-6. Distribution coverage and safety
-7. Balance sheet and refinancing
-8. Income growth
-9. Valuation and margin of safety
-10. Tax and currency
-11. Portfolio fit
-12. Scenarios: base, adverse, severe
-13. Dividend-cut risks
-14. Purchase or reinforcement conditions
-15. Reduction or sale conditions
-16. Monitoring table
-17. One-sentence conclusion
-18. Sources and data quality
+1. 핵심 요약
+2. 판정 및 분류
+3. 가능한 포트폴리오 역할
+4. 사업과 분배 현금의 원천
+5. 배당 이력과 일정
+6. 분배 커버리지와 안전성
+7. 재무상태표와 차환
+8. 소득 성장
+9. 밸류에이션과 안전마진
+10. 세금과 통화
+11. 포트폴리오 적합성
+12. 시나리오: 기본, 부정적, 심각
+13. 배당 삭감 리스크
+14. 매수 또는 비중 확대 조건
+15. 축소 또는 매도 조건
+16. 모니터링 표
+17. 한 문장 결론
+18. 출처와 데이터 품질
 
-Save the result to `reports/{company}-income-investment-{YYYYMMDD}.md`, using a filesystem-safe company identifier. Include the scorecard and blocking-gate result in section 2, the monthly income calendar in section 11 when calculable, and source title, issuer/publisher, publication date, accessed date, reporting period, URL, and primary/secondary label in section 18.
+결과를 `reports/{company}-income-investment-{YYYYMMDD}.md` 에 저장하고, 파일 시스템에 안전한 회사 식별자를 사용한다. 2절에는 평가표와 차단 게이트 결과를, 11절에는 계산 가능할 때 월별 소득 일정표를, 18절에는 출처 제목, 발행 주체, 발행일, 열람일, 보고 기간, URL, 1차/2차 구분을 포함한다.
 
-## Release Audit
+## 발행 감사
 
 ```bash
 python3 tools/report_audit.py extract --report reports/{company}-income-investment-{YYYYMMDD}.md
-# Verify every extracted item against reliable sources, then:
+# 추출된 모든 항목을 신뢰할 수 있는 출처와 대조해 검증한 뒤:
 python3 tools/report_audit.py verdict --results '<verified JSON>' --report {company}-income-investment-{YYYYMMDD}.md
 ```
 
-Fix failed items and repeat the audit. Clearly retain unresolved gaps and lower confidence rather than filling them with assumptions.
+통과하지 못한 항목을 고치고 감사를 반복한다. 해결되지 않은 공백은 가정으로 메우지 말고 명확히 남겨 두며 신뢰도를 낮춘다.

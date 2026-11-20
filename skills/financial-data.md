@@ -1,152 +1,152 @@
-# 财务数据获取与交叉验证规范
+# 재무 데이터 취득 및 교차검증 규범
 
-本规范适用于所有涉及企业财务数据的研究。**每个关键数据必须来自两个独立来源，误差>1%须标记。**
+본 규범은 기업 재무 데이터가 관련된 모든 연구에 적용한다. **핵심 데이터는 모두 두 개의 독립된 출처에서 가져와야 하며, 오차>1%이면 반드시 표시한다.**
 
 ---
 
-## 数据源优先级
+## 데이터 출처 우선순위
 
-### 美股（PDD、腾讯ADR、网易ADR等）
+### 미국 주식(PDD, 텐센트 ADR, 넷이즈 ADR 등)
 
-| 优先级 | 来源 | URL | 获取方式 |
+| 우선순위 | 출처 | URL | 취득 방식 |
 |--------|------|-----|---------|
-| 1（主） | **macrotrends** | macrotrends.net/stocks/charts/{ticker} | 直接访问，无需注册 |
-| 2（副） | **stockanalysis** | stockanalysis.com/stocks/{ticker}/financials | 直接访问，无需注册 |
-| 原始一手 | SEC EDGAR | sec.gov/cgi-bin/browse-edgar | 10-K / 10-Q 原文 |
+| 1(주) | **macrotrends** | macrotrends.net/stocks/charts/{ticker} | 직접 접속, 가입 불필요 |
+| 2(부) | **stockanalysis** | stockanalysis.com/stocks/{ticker}/financials | 직접 접속, 가입 불필요 |
+| 원본 1차 자료 | SEC EDGAR | sec.gov/cgi-bin/browse-edgar | 10-K / 10-Q 원문 |
 
-### 港股（腾讯0700、网易9999、美团3690等）
+### 홍콩 주식(텐센트 0700, 넷이즈 9999, 메이퇀 3690 등)
 
-| 优先级 | 来源 | URL | 获取方式 |
+| 우선순위 | 출처 | URL | 취득 방식 |
 |--------|------|-----|---------|
-| 1（主） | **aastocks** | aastocks.com/tc/stocks/analysis/company-fundamental | 直接访问 |
-| 2（副） | **macrotrends**（ADR代码） | 腾讯用TCEHY，网易用NTES | 直接访问 |
-| 原始一手 | HKEX披露易 | hkexnews.hk | 年报PDF |
+| 1(주) | **aastocks** | aastocks.com/tc/stocks/analysis/company-fundamental | 직접 접속 |
+| 2(부) | **macrotrends**(ADR 코드) | 텐센트는 TCEHY, 넷이즈는 NTES | 직접 접속 |
+| 원본 1차 자료 | HKEX披露易(HKEXnews 공시 사이트) | hkexnews.hk | 연간 보고서 PDF |
 
-### A股（三七互娱、吉比特等）
+### A주(싼치후위(三七互娱), 지비터(吉比特) 등)
 
-| 优先级 | 来源 | URL | 获取方式 |
+| 우선순위 | 출처 | URL | 취득 방식 |
 |--------|------|-----|---------|
-| 1（主） | **东方财富** | eastmoney.com → 搜股票代码 → 财务报表 | 直接访问 |
-| 2（副） | **巨潮资讯** | cninfo.com.cn | 原始年报/季报PDF |
+| 1(주) | **东方财富**(둥팡차이푸) | eastmoney.com → 종목 코드 검색 → 财务报表(재무제표) | 직접 접속 |
+| 2(부) | **巨潮资讯**(쥐차오쯔쉰) | cninfo.com.cn | 연간/분기 보고서 원본 PDF |
 
-### 台股（台积电2330、联发科2454、大立光3008等）
+### 대만 주식(TSMC(台積電) 2330, 미디어텍(聯發科) 2454, 라간정밀(大立光) 3008 등)
 
-| 优先级 | 来源 | URL | 获取方式 |
+| 우선순위 | 출처 | URL | 취득 방식 |
 |--------|------|-----|---------|
-| 1（主） | **FinMind API** | api.finmindtrade.com | `tools/twstock_data.py`（零依赖脚本，见下） |
-| 2（副） | **Goodinfo台湾股市资讯网** | goodinfo.tw/tw/StockDetail.asp?STOCK_ID={代码} | 直接访问 |
-| 原始一手 | 公开资讯观测站（MOPS） | mops.twse.com.tw | 财报原文/月营收公告 |
+| 1(주) | **FinMind API** | api.finmindtrade.com | `tools/twstock_data.py`(의존성 없는 스크립트, 아래 참조) |
+| 2(부) | **Goodinfo台湾股市资讯网**(Goodinfo 대만 주식시장 정보망) | goodinfo.tw/tw/StockDetail.asp?STOCK_ID={코드} | 직접 접속 |
+| 원본 1차 자료 | 公开资讯观测站(공개정보관측소, MOPS) | mops.twse.com.tw | 재무보고서 원문/월 매출 공시 |
 
-**FinMind 取数工具**（分析台股时优先调用，输出自带市值验算）：
+**FinMind 데이터 취득 도구**(대만 주식을 분석할 때 우선 호출한다. 출력에 시가총액 검산이 포함된다):
 
 ```bash
-python3 tools/twstock_data.py quote 2330        # 最新行情 + PER/PBR/殖利率 + 市值验算
-python3 tools/twstock_data.py valuation 2330    # 估值指标 + PER一年区间 + 52周高低
-python3 tools/twstock_data.py financials 2330   # 近5年年度核心财务（营收/毛利率/归母净利/EPS/ROE）
-python3 tools/twstock_data.py revenue 2330      # 近13个月月营收及同比
-python3 tools/twstock_data.py dividend 2330     # 近年股利政策（现金/股票股利、除息日）
-python3 tools/twstock_data.py search 台積        # 搜索股票代码（注意台股名称为繁体）
+python3 tools/twstock_data.py quote 2330        # 최신 시세 + PER/PBR/배당수익률 + 시가총액 검산
+python3 tools/twstock_data.py valuation 2330    # 밸류에이션 지표 + PER 1년 구간 + 52주 고저
+python3 tools/twstock_data.py financials 2330   # 최근 5년 연간 핵심 재무(매출/매출총이익률/지배주주 순이익/EPS/ROE)
+python3 tools/twstock_data.py revenue 2330      # 최근 13개월 월 매출 및 전년 동기 대비
+python3 tools/twstock_data.py dividend 2330     # 최근 수년 배당 정책(현금/주식 배당, 배당락일)
+python3 tools/twstock_data.py search 台積        # 종목 코드 검색(대만 주식 종목명은 번체자임에 유의)
 ```
 
-台股特别注意：
+대만 주식 특별 유의사항:
 
-1. **货币单位是新台币（TWD）**，与港币/人民币/美元混排时必须显式标注，跨市场对比先统一换算
-2. **月营收是台股独有优势**：上市柜公司每月10日前强制披露上月营收，是跟踪基本面拐点最快的公开信号，earnings-review/thesis-tracker 类分析应优先利用（`revenue` 子命令）
-3. FinMind 损益表为**单季值**，工具已自动加总为年度值；不足4季的年份会标注"仅前N季累计"
-4. FinMind 未注册可直接用（有小时级限额）。注册后的 API token **只存本机、严禁提交到 git**，工具按优先级自动读取：①环境变量 `FINMIND_TOKEN`；②本地文件 `local/finmind_token.txt`（`local/` 已被 `.gitignore` 永久排除，把 token 单独一行写入该文件即可）。token 不得出现在报告、skill、commit 中
-5. 交叉验证：FinMind 数值与 Goodinfo（或 macrotrends 上的 ADR，如 TSM）对照，误差规则同下；台积电等有 ADR 的公司注意 ADR 与台股原股的汇率/存托比率差异（1 TSM ADR = 5 股 2330）
+1. **통화 단위는 대만달러(TWD)다**. 홍콩달러/위안화/미국달러와 섞어 쓸 때는 반드시 명시적으로 표기하고, 시장 간 비교는 먼저 통일 환산한다
+2. **월 매출은 대만 주식만의 강점이다**: 상장·장외(上市柜) 회사는 매월 10일 이전에 전월 매출을 의무 공시하며, 이는 펀더멘털 변곡점을 추적하는 가장 빠른 공개 신호다. earnings-review/thesis-tracker 류의 분석은 이를 우선 활용한다(`revenue` 하위 명령)
+3. FinMind 손익계산서는 **단일 분기 값**이며, 도구가 자동으로 연간 값으로 합산한다. 4개 분기가 안 되는 연도는 "仅前N季累计"(앞 N개 분기 누계만)로 표기된다
+4. FinMind는 가입하지 않아도 바로 쓸 수 있다(시간 단위 한도가 있다). 가입 후의 API token은 **로컬 기기에만 저장하고, git에 제출하는 것을 엄금한다**. 도구는 다음 우선순위로 자동으로 읽는다: ①환경 변수 `FINMIND_TOKEN`; ②로컬 파일 `local/finmind_token.txt`(`local/` 은 `.gitignore` 로 영구 제외되어 있으므로, token을 한 줄로 이 파일에 써 넣으면 된다). token은 보고서, skill, commit에 나타나서는 안 된다
+5. 교차검증: FinMind 수치를 Goodinfo(또는 macrotrends의 ADR, 예: TSM)와 대조하며, 오차 규칙은 아래와 같다. TSMC처럼 ADR이 있는 회사는 ADR과 대만 원주의 환율/예탁 비율 차이에 유의한다(1 TSM ADR = 2330 5주)
 
 ---
 
-## 执行规范
+## 실행 규범
 
-### 第一步：获取数据
+### 1단계: 데이터 취득
 
-对每个财务指标（收入、净利润、毛利率、经营现金流、资产负债率等），分别从**来源1**和**来源2**取数。
+재무 지표(매출, 순이익, 매출총이익률, 영업현금흐름, 부채비율 등)마다 **출처 1**과 **출처 2**에서 각각 수치를 가져온다.
 
-### 第二步：误差计算与标记
+### 2단계: 오차 계산과 표시
 
 ```
-误差率 = |来源1数值 - 来源2数值| / 来源1数值 × 100%
+오차율 = |출처 1 수치 - 출처 2 수치| / 출처 1 수치 × 100%
 ```
 
-| 误差 | 处理方式 |
+| 오차 | 처리 방식 |
 |------|---------|
-| ≤ 1% | ✅ 一致，取来源1数值，标注两个来源 |
-| 1% ~ 5% | ⚠️ 标记"数据存在差异"，注明两个数值，说明可能原因（汇率/会计口径） |
-| > 5% | ❌ 标记"数据存在重大差异"，必须查原始财报核实，不得直接使用 |
+| ≤ 1% | ✅ 일치. 출처 1 수치를 쓰고 두 출처를 표기한다 |
+| 1% ~ 5% | ⚠️ "데이터에 차이 있음"으로 표시하고, 두 수치를 적고, 가능한 원인(환율/회계 기준)을 설명한다 |
+| > 5% | ❌ "데이터에 중대한 차이 있음"으로 표시하고, 반드시 원본 재무보고서를 확인한다. 그대로 사용해서는 안 된다 |
 
-### 第三步：数据呈现格式
+### 3단계: 데이터 제시 형식
 
-每个关键数据必须按以下格式标注：
+핵심 데이터는 모두 다음 형식으로 표기한다:
 
 ```
-收入：1,239亿元 ✅
-  - macrotrends: 1,241亿元
-  - stockanalysis: 1,237亿元
-  - 误差: 0.3%
+매출: 1,239억 위안 ✅
+  - macrotrends: 1,241억 위안
+  - stockanalysis: 1,237억 위안
+  - 오차: 0.3%
 ```
 
-差异示例：
+차이 예시:
 ```
-净利润：245亿元 ⚠️ 数据存在差异
-  - macrotrends: 245亿元（GAAP）
-  - stockanalysis: 278亿元（Non-GAAP）
-  - 误差: 13.5% — 原因：会计口径不同（GAAP vs Non-GAAP）
+순이익: 245억 위안 ⚠️ 데이터에 차이 있음
+  - macrotrends: 245억 위안(GAAP)
+  - stockanalysis: 278억 위안(Non-GAAP)
+  - 오차: 13.5% — 원인: 회계 기준이 다름(GAAP vs Non-GAAP)
 ```
 
 ---
 
-## 常见差异原因（不一定是数据错误）
+## 흔한 차이 원인(반드시 데이터 오류인 것은 아니다)
 
-| 原因 | 说明 |
+| 원인 | 설명 |
 |------|------|
-| GAAP vs Non-GAAP | 最常见，尤其是利润类数据 |
-| 汇率换算 | 港币/人民币/美元换算时间点不同 |
-| 财年定义 | 自然年 vs 财年（如苹果财年10月结束） |
-| 合并口径 | 是否含少数股东权益 |
-| 数据更新滞后 | 某平台尚未更新最新一期财报 |
+| GAAP vs Non-GAAP | 가장 흔하며, 특히 이익류 데이터에서 그렇다 |
+| 환율 환산 | 홍콩달러/위안화/미국달러 환산 시점이 다름 |
+| 회계연도 정의 | 역년 vs 회계연도(예: 애플의 회계연도는 10월에 끝난다) |
+| 연결 기준 | 비지배지분 포함 여부 |
+| 데이터 갱신 지연 | 어떤 플랫폼이 최신 분기 재무보고서를 아직 반영하지 않음 |
 
 ---
 
-## 特别规则
+## 특별 규칙
 
-1. **未上市公司**（米哈游、莉莉丝等）：只有一手数据来源时，数据前标记 `[估计]`，不执行交叉验证
-2. **季度数据 vs 年度数据**：优先使用年度数据做交叉验证，季度数据部分来源可能有滞后
-3. **原始财报优先**：若两个来源均与原始财报（10-K/年报PDF）不符，以原始财报为准，标记来源错误
+1. **비상장 회사**(미호요, 릴리스게임즈 등): 1차 데이터 출처가 하나뿐일 때는 데이터 앞에 `[추정]` 을 표시하고, 교차검증을 수행하지 않는다
+2. **분기 데이터 vs 연간 데이터**: 교차검증에는 연간 데이터를 우선 사용한다. 분기 데이터는 일부 출처에서 지연될 수 있다
+3. **원본 재무보고서 우선**: 두 출처가 모두 원본 재무보고서(10-K/연간 보고서 PDF)와 맞지 않으면 원본 재무보고서를 기준으로 하고, 출처 오류로 표시한다
 
 ---
 
-## 股价与复权（历史序列必读）
+## 주가와 수정주가(과거 시계열 필독)
 
-价格有三种口径，混用会让历史股价位置、长期涨幅、历史估值分位全部失真：
+가격에는 세 가지 기준이 있으며, 섞어 쓰면 과거 주가 위치, 장기 상승률, 과거 밸류에이션 분위수가 모두 왜곡된다:
 
-| 口径 | 含义 | 用途 |
+| 기준 | 의미 | 용도 |
 |------|------|------|
-| 不复权 | 实际成交价，除权除息日跳空 | 仅用于"当前时点"快照 |
-| 前复权 | 以最新价为基准回调历史价 | 历史股价对比、N年涨幅、历史PE band 一律用它 |
-| 后复权 | 以上市首日为基准前推 | 计算历史总回报/年化收益 |
+| 무수정(不复权) | 실제 체결가. 권리락·배당락일에 갭 발생 | "현재 시점" 스냅샷에만 사용 |
+| 전방 수정(前复权) | 최신 가격을 기준으로 과거 가격을 조정 | 과거 주가 비교, N년 상승률, 과거 PE band에는 일률적으로 이것을 쓴다 |
+| 후방 수정(后复权) | 상장 첫날을 기준으로 이후 가격을 조정 | 과거 총수익/연환산 수익률 계산 |
 
-规则：
+규칙:
 
-1. 涉及历史价格的分析统一用**前复权**，且同一分析内**不得混用**复权与不复权来源。
-2. 当前市值/当前PE 用**当前实际股价 × 当前总股本**即可，与复权无关——复权只影响历史序列。
-3. 跨越拆股/大比例送转的每股指标（历史EPS、历史股价），必须复权还原后再同比。
-4. 总回报/年化收益需计入分红（后复权已含），只看价格涨幅会低估。
-5. 增发/回购后市值验算以最新总股本为准（`financial_rigor.py verify-market-cap` 偏差>5% 会提示核对）。
+1. 과거 가격이 관련된 분석은 **전방 수정(前复权)**으로 통일하며, 한 분석 안에서 수정주가 출처와 무수정 출처를 **섞어 쓰지 않는다**.
+2. 현재 시가총액/현재 PE는 **현재 실제 주가 × 현재 총주식수**를 쓰면 되며, 수정주가와 무관하다——수정주가는 과거 시계열에만 영향을 준다.
+3. 주식분할/대규모 무상증자를 사이에 둔 주당 지표(과거 EPS, 과거 주가)는 반드시 수정주가로 환원한 뒤 전년 동기 대비를 계산한다.
+4. 총수익/연환산 수익률에는 배당을 포함해야 한다(후방 수정에는 이미 포함되어 있다). 가격 상승률만 보면 과소평가된다.
+5. 증자/자사주 매입 후의 시가총액 검산은 최신 총주식수를 기준으로 한다(`financial_rigor.py verify-market-cap` 은 편차>5%이면 확인하라고 알린다).
 
 ---
 
-## 快速索引
+## 빠른 색인
 
-| 场景 | 主要来源 | 备用来源 |
+| 상황 | 주요 출처 | 예비 출처 |
 |------|---------|---------|
-| PDD / 拼多多 | macrotrends.net/stocks/charts/PDD | stockanalysis.com/stocks/pdd |
-| 腾讯 | macrotrends.net/stocks/charts/TCEHY | aastocks（0700.HK） |
-| 网易 | macrotrends.net/stocks/charts/NTES | aastocks（9999.HK） |
-| 三七互娱 | eastmoney.com（002555） | cninfo.com.cn |
-| 吉比特 | eastmoney.com（603444） | cninfo.com.cn |
+| PDD / 핀둬둬 | macrotrends.net/stocks/charts/PDD | stockanalysis.com/stocks/pdd |
+| 텐센트 | macrotrends.net/stocks/charts/TCEHY | aastocks(0700.HK) |
+| 넷이즈 | macrotrends.net/stocks/charts/NTES | aastocks(9999.HK) |
+| 싼치후위(三七互娱) | eastmoney.com(002555) | cninfo.com.cn |
+| 지비터(吉比特) | eastmoney.com(603444) | cninfo.com.cn |
 | Nintendo | macrotrends.net/stocks/charts/NTDOY | stockanalysis.com/stocks/ntdoy |
-| Capcom | macrotrends（CCOEY） | stockanalysis（CCOEY） |
-| 台积电 | tools/twstock_data.py（2330） | goodinfo.tw / macrotrends（TSM，注意1 ADR=5股） |
-| 联发科 | tools/twstock_data.py（2454） | goodinfo.tw |
+| Capcom | macrotrends(CCOEY) | stockanalysis(CCOEY) |
+| TSMC(台積電) | tools/twstock_data.py(2330) | goodinfo.tw / macrotrends(TSM, 1 ADR=5주에 유의) |
+| 미디어텍(聯發科) | tools/twstock_data.py(2454) | goodinfo.tw |

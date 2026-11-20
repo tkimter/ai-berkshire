@@ -43,7 +43,8 @@ class ReportsIndexTest(unittest.TestCase):
 
     def run_index(self, *args, expected=0):
         result = subprocess.run([sys.executable, "tools/reports_index.py", *args],
-                                cwd=self.repo, capture_output=True, text=True)
+                                cwd=self.repo, capture_output=True, text=True, encoding="utf-8",
+                                env=dict(os.environ, PYTHONIOENCODING="utf-8"))
         self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
         return result
 
@@ -88,9 +89,13 @@ class ReportsIndexTest(unittest.TestCase):
     def test_git_failure_does_not_overwrite_published_index(self):
         self.run_index()
         before = (self.repo / "reports/index.json").read_bytes()
+        # Windows에서는 git 객체 파일이 읽기 전용이라 그대로는 지워지지 않는다
+        for dirpath, _, filenames in os.walk(self.repo / ".git"):
+            for name in filenames:
+                os.chmod(os.path.join(dirpath, name), 0o700)
         shutil.rmtree(self.repo / ".git")
         result = self.run_index(expected=1)
-        self.assertIn("无法读取 Git 暂存区", result.stderr)
+        self.assertIn("Git 스테이징 영역을 읽을 수 없어", result.stderr)
         self.assertEqual(before, (self.repo / "reports/index.json").read_bytes())
 
     def test_chinese_git_date_is_independent_of_quote_path_config(self):
