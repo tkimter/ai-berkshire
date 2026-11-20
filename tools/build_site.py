@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""把仓库里已入库的报告生成静态阅读站点，兼容电脑、手机与墨水屏阅读器。
+"""Git에 올라간 보고서로 정적 읽기 사이트를 만든다. PC·휴대폰·전자잉크 리더에서 읽을 수 있다.
 
-输入：reports/index.json（由 tools/reports_index.py 生成）、投资炼丹/、实盘记录/ 下已纳入 Git 的 Markdown。
-输出：site/ 目录，纯 HTML，无框架；按公司、专题、时间、类型、公众号发表五个维度建索引，另有站内搜索与 RSS。
+입력: reports/index.json(tools/reports_index.py가 생성), reports/ 아래 README.md, docs/ 아래 Markdown.
+      모두 Git이 추적하는 파일만 쓴다.
+출력: site/ 폴더. 프레임워크 없는 순수 HTML. 기업·테마·날짜·유형 네 축으로 색인을 만들고 사이트 내 검색과 RSS를 둔다.
 
-用法：python3 tools/build_site.py [--out site]
-依赖：markdown、pypinyin（pip install markdown pypinyin）
+index.json의 bucket/type 값(한국어)을 그대로 쓴다.
+  bucket: 기업 / 테마 / 대가연구 / 스크리닝풀 / 기타
+  type:   연구 / 실적 / 게시글 / 심층시리즈 / 비교 / 조직·경영 / 밸류·비중 / 스크리닝 / 초안
+
+사용법: python3 tools/build_site.py [--out site]
+의존성: markdown (pip install markdown)
 """
 import argparse
 import hashlib
@@ -21,23 +26,30 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 
 import markdown
-from pypinyin import Style, lazy_pinyin
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REPO_URL = "https://github.com/xbtlin/ai-berkshire"
-SITE_URL = "https://xbtlin.github.io/ai-berkshire/"
-SITE_NAME = "AI Berkshire 研究阅读"
-# 访问统计：在 goatcounter.com 注册后填站点代码（如 "aiberkshire"）；留空则不加统计脚本。
-# 也可用环境变量 GOATCOUNTER_CODE 覆盖。打开任意页面并在网址后加 #notrack 可让本机不计入统计。
+REPO_URL = "https://github.com/tkimter/ai-berkshire"
+# 사이트 공개 주소. 기본값은 저장소 URL에서 만든 GitHub Pages 주소이고, 환경변수 SITE_URL로 덮어쓴다.
+SITE_URL = os.environ.get("SITE_URL") or "https://%s.github.io/%s/" % tuple(REPO_URL.rsplit("/", 2)[-2:])
+if not SITE_URL.endswith("/"):
+    SITE_URL += "/"
+SITE_NAME = "AI Berkshire 리서치"
+# 방문 통계: goatcounter.com에 가입한 뒤 사이트 코드(예: "aiberkshire")를 환경변수 GOATCOUNTER_CODE에 넣는다.
+# 비워 두면 통계 스크립트를 넣지 않는다. 아무 페이지 주소 뒤에 #notrack 을 붙여 열면 그 기기는 집계에서 빠진다.
 GOATCOUNTER = os.environ.get("GOATCOUNTER_CODE", "")
-# 国内主统计：百度统计站点 ID（统计代码里 hm.js? 后面那串 32 位字符）；留空则不加。也可用环境变量 BAIDU_TONGJI_ID。
-BAIDU_TONGJI = os.environ.get("BAIDU_TONGJI_ID", "fb8b18770c2f12915beaa9539754eb5c")
+# Baidu 통계 사이트 ID(hm.js? 뒤의 32자). 환경변수 BAIDU_TONGJI_ID로 지정하며 비워 두면 넣지 않는다.
+BAIDU_TONGJI = os.environ.get("BAIDU_TONGJI_ID", "")
 FRONT = re.compile(r"\A---\s*\n.*?\n---\s*\n", re.S)
 H1 = re.compile(r"^#\s+(.+?)\s*$", re.M)
 DATE8 = re.compile(r"(20[2-3]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])")
 ASSET_EXT = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".pdf", ".csv", ".json", ".txt", ".html"}
-TYPE_ORDER = ["深度系列", "研究", "财报", "估值仓位", "组织管理", "横评对比", "公众号", "筛选", "底稿"]
-NOISE_BUCKETS = {"筛选池"}
+
+# index.json의 bucket 값
+B_COMPANY, B_THEME, B_SCREEN = "기업", "테마", "스크리닝풀"
+# index.json의 type 값. T_GUIDE는 이 사이트에서만 쓰는 값이다(폴더 README, 시리즈 안내)
+T_RESEARCH, T_SCREEN, T_DRAFT, T_GUIDE = "연구", "스크리닝", "초안", "안내"
+TYPE_ORDER = ["심층시리즈", "연구", "실적", "밸류·비중", "조직·경영", "비교", "게시글", "스크리닝", "초안"]
+NOISE_BUCKETS = {B_SCREEN}
 
 
 def sh(args):
@@ -54,18 +66,23 @@ def page_id(path):
 
 
 def slug(name):
-    s = re.sub(r"[^0-9A-Za-z一-鿿]+", "-", name).strip("-")
+    # 글자·숫자가 아닌 것은 모두 "-"로 바꾼다. 한글은 그대로 URL에 남는다.
+    s = re.sub(r"[\W_]+", "-", name).strip("-")
     return s or page_id(name)
 
 
+CHOSEONG = "ㄱㄱㄴㄷㄷㄹㅁㅂㅂㅅㅅㅇㅈㅈㅊㅋㅌㅍㅎ"  # 된소리는 예사소리 칸에 넣는다
+
+
 def initial(name):
+    """기업 색인의 묶음 머리글자: 영문은 대문자, 한글은 첫소리, 그 밖은 #."""
     c = name.strip()[:1]
     if not c:
         return "#"
     if re.match(r"[A-Za-z]", c):
         return c.upper()
-    if re.match(r"[一-鿿]", c):
-        return lazy_pinyin(c, style=Style.FIRST_LETTER)[0].upper()
+    if "가" <= c <= "힣":
+        return CHOSEONG[(ord(c) - 0xAC00) // 588]
     return "#"
 
 
@@ -78,7 +95,7 @@ def read(path):
 
 
 def blob(path):
-    """读取已入库内容；本地工作区缺失（例如他处未提交的删除）时回退到 HEAD。"""
+    """Git에 올라간 내용을 읽는다. 작업 폴더에 파일이 없으면(예: 다른 곳에서 커밋하지 않은 삭제) HEAD에서 읽는다."""
     return subprocess.check_output(["git", "show", "HEAD:%s" % path], cwd=ROOT,
                                    stderr=subprocess.DEVNULL)
 
@@ -93,7 +110,12 @@ def available(path):
         return False
 
 
-# ---------- 收集条目 ----------
+# ---------- 항목 수집 ----------
+
+def h1_title(path, fallback):
+    m = H1.search(FRONT.sub("", read(path)))
+    return m.group(1).strip() if m else fallback
+
 
 def collect():
     items = []
@@ -103,8 +125,9 @@ def collect():
             continue
         items.append({
             "title": r["title"], "path": r["path"], "bucket": r["bucket"], "group": r["group"],
-            "series": r.get("series", ""), "type": r.get("type", "研究"), "date": r.get("date", ""),
+            "series": r.get("series", ""), "type": r.get("type", T_RESEARCH), "date": r.get("date", ""),
         })
+    # 폴더 README: index.json에는 없으므로 여기서 안내 글로 싣는다
     seen = {i["path"] for i in items}
     dir_meta = {}
     for i in items:
@@ -119,61 +142,16 @@ def collect():
             bucket, group = dir_meta.get(d, (None, None))
         if bucket is None:
             parts = p.split("/")
-            bucket, group = ("专题", parts[1] if len(parts) > 2 else "研究总览")
-        text = read(p)
-        m = H1.search(FRONT.sub("", text))
-        items.append({"title": (m.group(1).strip() if m else "%s 导读" % group), "path": p,
-                      "bucket": bucket, "group": group, "series": "", "type": "导读",
+            bucket, group = (B_THEME, parts[1] if len(parts) > 2 else "연구 개요")
+        items.append({"title": h1_title(p, "%s 안내" % group), "path": p,
+                      "bucket": bucket, "group": group, "series": "", "type": T_GUIDE,
                       "date": git_date(p)})
-    for p in tracked("筛选公司/"):
-        if not p.endswith(".md"):
-            continue
-        parts = p.split("/")
-        group = parts[1] if len(parts) > 2 else "筛选公司"
-        text = read(p)
-        m = H1.search(FRONT.sub("", text))
-        name = os.path.basename(p)[:-3]
-        dm = DATE8.search(name)
-        items.append({"title": m.group(1).strip() if m else name, "path": p, "bucket": "筛选池",
-                      "group": group, "series": "", "type": "筛选",
-                      "date": "%s-%s-%s" % dm.groups() if dm else git_date(p)})
     for p in tracked("docs/"):
         if not p.endswith(".md") or os.path.basename(p) in ("ROADMAP.md", "README.md"):
             continue
-        text = read(p)
-        m = H1.search(FRONT.sub("", text))
-        items.append({"title": m.group(1).strip() if m else os.path.basename(p)[:-3], "path": p,
-                      "bucket": "专题", "group": "随笔与综述", "series": "", "type": "研究",
+        items.append({"title": h1_title(p, os.path.basename(p)[:-3]), "path": p,
+                      "bucket": B_THEME, "group": "에세이·종합", "series": "", "type": T_RESEARCH,
                       "date": git_date(p)})
-    for p in tracked("投资炼丹/"):
-        if not p.endswith(".md") or p.endswith("README.md"):
-            continue
-        parts = p.split("/")
-        group = parts[1] if len(parts) > 2 else "其他"
-        text = read(p)
-        m = H1.search(FRONT.sub("", text))
-        name = os.path.basename(p)[:-3]
-        dm = DATE8.match(name)
-        date = "%s-%s-%s" % dm.groups() if dm else ""
-        title = m.group(1).strip() if m else re.sub(r"^\d{8}-", "", name).replace("-", " ")
-        pub = re.search(r"发表标题：(.+)", text)
-        if pub:
-            title = pub.group(1).strip()
-        front = FRONT.match(text)
-        metadata = dict(re.findall(r"^(wechat_status|source_report):\s*(.+)$", front.group(0), re.M)) if front else {}
-        items.append({"title": title, "path": p, "bucket": "公众号发表", "group": group,
-                      "series": "", "type": "公众号", "date": date,
-                      "status": metadata.get("wechat_status", ""), "source_report": metadata.get("source_report", "")})
-    for p in tracked("实盘记录/"):
-        if not p.endswith(".md"):
-            continue
-        text = read(p)
-        m = H1.search(FRONT.sub("", text))
-        name = os.path.basename(p)[:-3]
-        dm = DATE8.search(name)
-        date = "%s-%s-%s" % dm.groups() if dm else git_date(p)
-        items.append({"title": m.group(1).strip() if m else name, "path": p, "bucket": "实盘记录",
-                      "group": "实盘记录", "series": "", "type": "实盘", "date": date})
     for it in items:
         it["id"] = page_id(it["path"])
         it["url"] = "r/%s.html" % it["id"]
@@ -181,49 +159,57 @@ def collect():
     return items
 
 
-# ---------- 内容筛选：只上成品，不上中间产物 ----------
-# 中间产物（审计、核验、证据、底稿、数据收集、搜索日志、自动扫描、召回池分视角稿等）仍保留在 GitHub，
-# 阅读站点只收录成品报告。被排除的页面若被正文引用，链接自动指向 GitHub 原文。
-MID_DIR = re.compile(r"/(evidence|证据|research|data|sources|audit[^/]*|审计[^/]*|[^/]*审读[^/]*|[^/]*核验[^/]*|[^/]*证据)/", re.I)
-# 只认明确的中间产物标记；"核查""证据""审计"等词单独出现时可能是成品研究的标题，不据此排除
+# ---------- 내용 선별: 완성본만 싣고 중간 산출물은 싣지 않는다 ----------
+# 중간 산출물(감사, 검증, 증빙, 초안, 데이터 수집, 검색 로그, 자동 스캔, 스크리닝풀의 관점별 원고 등)은 GitHub에만 두고
+# 읽기 사이트에는 완성 보고서만 싣는다. 제외한 페이지를 본문이 가리키면 링크는 GitHub 원문으로 간다.
+MID_DIR = re.compile(r"/(evidence|증빙|research|data|sources|audit[^/]*|감사[^/]*|[^/]*리뷰기록[^/]*|[^/]*검증[^/]*|[^/]*증빙)/", re.I)
+# 분명한 중간 산출물 표시만 본다. "검증", "증빙", "감사" 같은 낱말 하나만으로는 완성 연구의 제목일 수 있어 제외하지 않는다
 MID_NAME = re.compile(
-    r"底稿|核验报告|核验记录|核对底稿|审计说明|审计记录|审查记录|核查说明|核查记录|核查边界|来源登记|"
-    r"来源与核验|来源与复核|来源与证据|来源与逻辑|data[_-]?collection|数据收集|search[-_]?log|^sources$|"
-    r"素材|工作稿|草稿|draft|todo|待.{0,4}复核|抽检|附录|^财务表$|^计算|financial[-_]rigor|"
-    r"readme__|__readme|审读|评审记录|audit[-_]notes|证据$", re.I)
-POOL_PERSPECTIVE = re.compile(r"/0[1-4]-[^/]*视角\.md$")
+    r"초안|검증\s?보고|검증\s?기록|검증\s?설명|검증\s?범위|감사\s?설명|감사\s?기록|감사\s?범위|재검토\s?기록|리뷰\s?기록|"
+    r"출처\s?목록|^출처와|data[_-]?collection|데이터\s?수집|search[-_]?log|^sources$|"
+    r"작업\s?원고|작업\s?자료|draft|todo|재검토\s?대기|표본\s?점검|부록|^재무표$|^계산|financial[-_]rigor|"
+    r"readme__|__readme|독자\s?리뷰|audit[-_]notes|증빙$", re.I)
+POOL_PERSPECTIVE = re.compile(r"/0[1-4]-[^/]*(관점|시각)\.md$")
 BOTTLENECK_RUN = re.compile(r"^reports/bottleneck-map/(20\d\d-\d\d-\d\d|daily)/")
+
+WHY_AUTO = "자동 스캔·일일 보고"
+WHY_DIR = "증빙/감사/조사 폴더"
+WHY_DRAFT = "감사·검증 초안"
+WHY_POOL = "스크리닝풀 관점별 원고"
+WHY_INDEX = "색인 페이지"
+WHY_SHORT = "너무 짧음"
+WHY_DUP = "중복 또는 구버전"
 
 
 def exclude_reason(it):
     path, name, title = it["path"], os.path.basename(it["path"]), it["title"]
     if BOTTLENECK_RUN.match(path):
-        return "自动扫描与日报"
+        return WHY_AUTO
     if MID_DIR.search("/" + path):
-        return "证据/审计/调研目录"
+        return WHY_DIR
     if MID_NAME.search(name[:-3]) or MID_NAME.search(title.strip()):
-        return "审计核验底稿"
-    if it["type"] == "底稿" and "系列说明" not in title:
-        return "审计核验底稿"
-    if it["bucket"] == "筛选池" and POOL_PERSPECTIVE.search(path):
-        return "召回池分视角稿"
+        return WHY_DRAFT
+    if it["type"] == T_DRAFT and "시리즈안내" not in re.sub(r"\s+", "", title):
+        return WHY_DRAFT
+    if it["bucket"] == B_SCREEN and POOL_PERSPECTIVE.search(path):
+        return WHY_POOL
     if path in ("reports/README.md",) or path.startswith("reports/_index/"):
-        return "索引页"
-    if it["bucket"] == "筛选池" and name == "README.md" and path.count("/") > 2:
-        return "召回池分视角稿"
-    if it["type"] == "导读" and it.get("_size", 9999) < 600:
-        return "过短"
+        return WHY_INDEX
+    if it["bucket"] == B_SCREEN and name == "README.md" and path.count("/") > 2:
+        return WHY_POOL
+    if it["type"] == T_GUIDE and it.get("_size", 9999) < 600:
+        return WHY_SHORT
     if it.get("_size", 9999) < 800:
-        return "过短"
+        return WHY_SHORT
     return ""
 
 
 def attach_workpapers(kept, hidden):
-    """给成品挂上 GitHub 上的底稿：项目目录（reports/公司/项目/）挂同目录及子目录的全部底稿；
-    公司根目录下的报告只挂文件名或子目录名日期相同的底稿。"""
+    """완성본에 GitHub의 초안을 붙인다. 프로젝트 폴더(reports/기업/프로젝트/)는 같은 폴더와 하위 폴더의 초안을 모두 붙이고,
+    기업 폴더 바로 아래의 보고서는 파일명이나 하위 폴더명의 날짜가 같은 초안만 붙인다."""
     for it in kept:
         d = os.path.dirname(it["path"])
-        project = it["path"].count("/") >= 3 and not it["path"].startswith("投资炼丹/")
+        project = it["path"].count("/") >= 3
         dm = DATE8.search(os.path.basename(it["path"]))
         day = "".join(dm.groups()) if dm else (it["date"] or "").replace("-", "")
         rows = []
@@ -238,43 +224,34 @@ def attach_workpapers(kept, hidden):
 
 
 def curate(items):
-    # 公众号：有发表版（投资炼丹）的，隐藏 reports/ 里对应的原稿，避免同文两份
-    drafts = set()
-    for it in items:
-        if it["bucket"] == "公众号发表":
-            if it.get("source_report"):
-                drafts.add(it["source_report"])
-            m = re.search(r"原稿：\[[^\]]*\]\(([^)]+)\)", read(it["path"]))
-            if m:
-                drafts.add(os.path.normpath(os.path.join(os.path.dirname(it["path"]), m.group(1))))
     kept, dropped, hidden = [], defaultdict(int), []
     for it in items:
         it["_size"] = len(read(it["path"]).encode("utf-8"))
-        why = "已有公众号发表版" if it["path"] in drafts else exclude_reason(it)
+        why = exclude_reason(it)
         if why:
             dropped[why] += 1
-            if why not in ("已有公众号发表版", "自动扫描与日报", "索引页", "过短"):
+            if why not in (WHY_AUTO, WHY_INDEX, WHY_SHORT):
                 it["_why"] = why
                 hidden.append(it)
         else:
             kept.append(it)
-    # 去重：内容完全相同的只留一份；同目录同标题的多个版本只留最新最长的一份
+    # 중복 제거: 내용이 완전히 같으면 하나만 남긴다. 같은 폴더·같은 제목의 여러 판은 가장 최근이고 가장 긴 것만 남긴다
     seen_hash, best = {}, {}
     for it in sorted(kept, key=lambda x: (x["date"] or "", x["_size"]), reverse=True):
         h = hashlib.sha1(read(it["path"]).encode("utf-8")).hexdigest()
         key = (os.path.dirname(it["path"]), re.sub(r"\s+", "", it["title"]))
         if h in seen_hash or key in best:
-            dropped["重复或旧版本"] += 1
+            dropped[WHY_DUP] += 1
             continue
         seen_hash[h] = 1
         best[key] = it
     kept = [it for it in kept if best.get((os.path.dirname(it["path"]), re.sub(r"\s+", "", it["title"]))) is it]
     for it in kept:
-        if it["type"] == "底稿":
-            it["type"] = "导读"
+        if it["type"] == T_DRAFT:
+            it["type"] = T_GUIDE
     attach_workpapers(kept, hidden)
-    print("收录 %d 篇；排除 %d 篇：%s" % (len(kept), sum(dropped.values()),
-          "，".join("%s %d" % kv for kv in sorted(dropped.items(), key=lambda x: -x[1]))))
+    print("수록 %d건, 제외 %d건: %s" % (len(kept), sum(dropped.values()),
+          ", ".join("%s %d" % kv for kv in sorted(dropped.items(), key=lambda x: -x[1]))))
     return kept
 
 
@@ -286,7 +263,7 @@ def git_date(path):
         return ""
 
 
-# ---------- HTML 外壳 ----------
+# ---------- HTML 틀 ----------
 
 CSS = """
 :root{--bg:#fbfbf9;--card:#fff;--fg:#1f2328;--muted:#656d76;--line:#e3e4e2;--accent:#0b5cad;--accent-bg:#eaf2fb;
@@ -299,7 +276,7 @@ html{font-size:17px;-webkit-text-size-adjust:100%}
 html[data-size=s1]{font-size:15px}html[data-size=s3]{font-size:19px}html[data-size=s4]{font-size:22px}
 *{box-sizing:border-box}
 body{margin:0;color:var(--fg);background:var(--bg);line-height:1.8;
-font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif}
+font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Noto Sans CJK KR","Malgun Gothic",sans-serif}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 header.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);
 -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -361,11 +338,7 @@ border:1px solid var(--line);border-radius:999px;padding:.45rem .6rem .45rem 1re
 .resume .x{margin-left:.5rem;color:var(--muted);cursor:pointer;padding:0 .3rem}
 ul.list li.done>a{color:var(--muted);font-weight:400}.rd{color:var(--accent)}
 ul.work li>a{font-weight:400;font-size:.95rem}
-.wx{display:flex;gap:1rem;align-items:center;margin:2.4rem 0 1rem;padding:1rem;background:var(--card);
-border:1px solid var(--line);border-radius:var(--radius)}.wx img{width:92px;height:92px;border-radius:6px;flex-shrink:0}
-.wx b{display:block;font-size:1rem}.wx span{color:var(--muted);font-size:.86rem}
-.wxline{margin:2.4rem 0 .6rem;padding-top:.8rem;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
-.wxline .fix{display:block;margin-top:.3rem}
+.fixline{margin:2.4rem 0 .6rem;padding-top:.8rem;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
 .intro{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin:1rem 0 1.4rem}
 .intro p{margin:.3rem 0}
 .layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.8rem;margin:1rem 0}
@@ -395,62 +368,49 @@ if(bar){var f=function(){var d=document.documentElement,m=d.scrollHeight-d.clien
 addEventListener('scroll',f,{passive:true});f()}});})();
 """
 
-WECHAT_CARD = ('<div class="wx"><img src="%sfiles/assets/wechat-qr.png" alt="公众号复利炼丹炉二维码">'
-               '<div><b>公众号「复利炼丹炉」</b><span>站上是全部成品报告；值得深研的公司和报告之外的判断与取舍，'
-               '精选发在公众号。微信扫码关注。</span></div></div>')
-
-
-def about_page(n_reports, n_companies, n_wechat, updated):
+def about_page(n_reports, n_companies, updated):
     return """
-<h1>关于 AI Berkshire</h1>
-<div class="meta">一个用 AI 做价值投资研究的开源项目 · 收录 %(n)d 篇成品报告 · %(c)d 家公司 · 更新至 %(u)s</div>
+<h1>AI Berkshire 소개</h1>
+<div class="meta">AI로 가치투자 연구를 하는 오픈소스 프로젝트 · 완성 보고서 %(n)d건 · 기업 %(c)d곳 · %(u)s 기준</div>
 
-<h2>这是什么</h2>
-<p>AI Berkshire 是一套开源的投资研究方法：把价值投资的分析框架写成 Claude Code 与 Codex 都能调用的研究技能（Skill），
-让一个人加上 AI 代理，能完成一个投研小组的工作量：读一手财报、交叉核验数字、多视角对抗论证、写成结论明确的报告。</p>
-<p>这个网站是项目的阅读入口，收录全部成品研究，按公司、专题、时间、类型整理，电脑、手机、电子阅读器都能读。</p>
+<h2>무엇인가</h2>
+<p>AI Berkshire는 오픈소스 투자 연구 방법론이다. 가치투자의 분석 틀을 Claude Code와 Codex가 불러 쓸 수 있는 연구 스킬(Skill)로 적어 두어,
+한 사람과 AI 에이전트가 투자 연구팀 하나의 작업량을 해낼 수 있게 한다. 1차 자료인 실적 공시를 읽고, 숫자를 교차 검증하고,
+여러 관점에서 반론을 맞세운 뒤, 결론이 분명한 보고서로 정리한다.</p>
+<p>이 사이트는 프로젝트의 읽기 입구다. 완성된 연구를 모두 싣고 기업·테마·날짜·유형별로 정리했으며 PC·휴대폰·전자책 리더에서 읽을 수 있다.</p>
 
-<h2>三个地方，三种精度</h2>
+<h2>두 곳, 두 가지 정밀도</h2>
 <div class="layers">
-<div><b>公众号「复利炼丹炉」</b><span>最精简。只发值得深研的公司，加上报告之外的个人判断与取舍。共 %(w)d 篇。</span></div>
-<div><b>本网站</b><span>全部成品报告。日常阅读、按公司翻历史判断、查找都在这里。</span></div>
-<div><b><a href="%(repo)s">GitHub 仓库</a></b><span>全部底稿：研究技能、审计核验、证据、中间稿都在。每篇报告页底部列有对应底稿。</span></div>
+<div><b>이 사이트</b><span>완성 보고서 전체. 평소에 읽고, 기업별로 과거 판단을 넘겨 보고, 찾아보는 곳이다.</span></div>
+<div><b><a href="%(repo)s">GitHub 저장소</a></b><span>초안 전체. 연구 스킬, 감사·검증 기록, 증빙, 중간 원고가 모두 있다. 각 보고서 페이지 아래에 해당 초안 목록이 있다.</span></div>
 </div>
 
-<h2>研究方法的几条原则</h2>
+<h2>연구 방법의 원칙</h2>
 <ul>
-<li><b>只用一手材料</b>：交易所公告、年报、业绩会原话。旧报告只当线索，不当证据。</li>
-<li><b>事实与判断分开写</b>：凡是推算和判断都标明，数字注明来源与口径。</li>
-<li><b>强制给结论</b>：不写"一方面、另一方面"的两头讨好，给出可以被检验的判断和检验时间点。</li>
-<li><b>可追溯</b>：同一家公司的报告按时间排在一起，判断怎么变、为什么变，都能对照着看。</li>
+<li><b>1차 자료만 쓴다</b>: 거래소 공시, 사업보고서, 실적 발표의 실제 발언. 과거 보고서는 단서일 뿐 증거가 아니다.</li>
+<li><b>사실과 판단을 나눠 쓴다</b>: 추정과 판단은 모두 표시하고, 숫자에는 출처와 기준을 적는다.</li>
+<li><b>결론을 반드시 낸다</b>: "한편으로는, 다른 한편으로는" 식으로 얼버무리지 않고, 검증할 수 있는 판단과 검증 시점을 적는다.</li>
+<li><b>추적할 수 있다</b>: 같은 기업의 보고서를 시간순으로 모아, 판단이 어떻게 왜 바뀌었는지 대조할 수 있다.</li>
 </ul>
 
-<h2>怎么用这个网站</h2>
+<h2>사이트 사용법</h2>
 <ul>
-<li><a href="companies/index.html">按公司</a>：每家公司一页，分公众号发表、深度系列、财报、估值等类型。</li>
-<li><a href="topics/index.html">专题</a>：行业研究、横向对比、筛选池。</li>
-<li><a href="dates/index.html">按时间</a>与<a href="types/index.html">按类型</a>：看最近写了什么。</li>
-<li><a href="search.html">搜索</a>：输入公司名或关键词，例如"拼多多 财报"。</li>
-<li>右上角可调字号和深浅色；读过的文章会标记进度，下次打开可以接着读（只记在你自己的浏览器里）。</li>
-<li>发现数据错误：每篇报告末尾有"提交纠错"，会打开 GitHub 的纠错表单并自动填好报告名称，请附上正确值和来源链接。</li>
-<li>也可以用 RSS 订阅更新：<a href="feed.xml">feed.xml</a>。</li>
+<li><a href="companies/index.html">기업별</a>: 기업마다 한 페이지. 심층시리즈, 실적, 밸류에이션 등 유형별로 나뉜다.</li>
+<li><a href="topics/index.html">테마</a>: 산업 연구, 비교, 스크리닝 풀.</li>
+<li><a href="dates/index.html">날짜별</a>과 <a href="types/index.html">유형별</a>: 최근에 무엇을 썼는지 본다.</li>
+<li><a href="search.html">검색</a>: 기업명이나 키워드를 넣는다. 예: "엔비디아 실적".</li>
+<li>오른쪽 위에서 글자 크기와 밝기를 바꿀 수 있다. 읽은 글에는 진행률이 표시되고 다음에 열면 이어 읽을 수 있다(본인 브라우저에만 저장된다).</li>
+<li>데이터 오류를 찾았다면: 보고서 끝의 "오류 제보"를 누르면 GitHub 오류 제보 양식이 보고서 이름이 채워진 채 열린다. 올바른 값과 출처 링크를 함께 적는다.</li>
+<li>RSS로 업데이트를 구독할 수 있다: <a href="feed.xml">feed.xml</a>.</li>
 </ul>
 
-<h2>关注公众号</h2>
-%(card)s
+<h2>직접 돌려 보기</h2>
+<p>연구 스킬, 사용 설명, 보고서 원문은 모두 <a href="%(repo)s">GitHub</a>에 있다. 저장소 첫 화면의 안내대로 설치하면 Claude Code나 Codex에서 불러 쓸 수 있다.
+issue와 개선 제안을 환영한다.</p>
 
-<h2>想自己跑一遍</h2>
-<p>研究技能、使用说明和全部报告原稿都在 <a href="%(repo)s">GitHub</a>，按仓库首页的"快速开始"装好即可在 Claude Code 或 Codex 里调用。
-欢迎提 issue 和改进建议。</p>
-
-<h2>官方渠道</h2>
-<p>本项目只有三个官方渠道：GitHub 仓库 <a href="%(repo)s">xbtlin/ai-berkshire</a>、本站、微信公众号「复利炼丹炉」。</p>
-<p><b>不收费、不荐股、不带单、不建投资群，也不以任何形式收款。</b>ai-berkshire.com、aiberkshire.com 等域名由他人注册，与本项目无关。
-凡以 AI Berkshire 名义拉群、收费、推荐个股的，都不是本人。</p>
-
-<h2>免责声明</h2>
-<p class="meta">本站内容是个人研究记录，不构成任何投资建议。报告中的判断可能有误，数据以公司公告原件为准。投资有风险，决策请独立判断。</p>
-""" % {"n": n_reports, "c": n_companies, "w": n_wechat, "u": updated, "repo": REPO_URL, "card": WECHAT_CARD % ""}
+<h2>면책</h2>
+<p class="meta">이 사이트의 내용은 개인 연구 기록이며 투자 권유가 아니다. 보고서의 판단은 틀릴 수 있고, 데이터는 회사 공시 원문이 기준이다. 투자에는 위험이 따르며 결정은 스스로 판단한다.</p>
+""" % {"n": n_reports, "c": n_companies, "u": updated, "repo": REPO_URL}
 
 
 READ_JS = r"""
@@ -460,7 +420,7 @@ document.addEventListener('DOMContentLoaded',function(){var b=document.body,root
 var d=get();
 if(page){var rec=d[page]||{p:0},el=document.documentElement;
  if(rec.p>0.05&&rec.p<0.95){var n=document.createElement('div');n.className='resume';
-  n.innerHTML='上次读到 '+Math.round(rec.p*100)+'% <button>继续阅读</button><span class="x">×</span>';
+  n.innerHTML='지난번 '+Math.round(rec.p*100)+'%까지 읽음 <button>이어 읽기</button><span class="x">×</span>';
   n.querySelector('button').onclick=function(){scrollTo(0,rec.p*(el.scrollHeight-el.clientHeight));n.remove()};
   n.querySelector('.x').onclick=function(){n.remove()};document.body.appendChild(n);setTimeout(function(){n.remove()},15000)}
  var t=null;addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(function(){var m=el.scrollHeight-el.clientHeight;
@@ -469,22 +429,22 @@ if(page){var rec=d[page]||{p:0},el=document.documentElement;
  var r0=d[page]||{};r0.t=Date.now();r0.title=b.getAttribute('data-title');if(r0.p==null)r0.p=0;d[page]=r0;put(d)}
 var links=document.querySelectorAll('ul.list li>a');for(var i=0;i<links.length;i++){var h=links[i].getAttribute('href')||'';
  var key=h.replace(/^(\.\.\/)+/,'');var r=d[key];if(r){var m=links[i].parentNode.querySelector('.meta');
- if(m){m.insertAdjacentHTML('beforeend',' · <span class="rd">'+(r.done?'已读':'读到 '+Math.round((r.p||0)*100)+'%')+'</span>')}
+ if(m){m.insertAdjacentHTML('beforeend',' · <span class="rd">'+(r.done?'읽음':Math.round((r.p||0)*100)+'% 읽음')+'</span>')}
  if(r.done)links[i].parentNode.classList.add('done')}}
 var box=document.getElementById('recent-read');if(box){var arr=Object.keys(d).map(function(k){return{k:k,r:d[k]}})
  .filter(function(x){return x.r.title}).sort(function(a,b){return b.r.t-a.r.t}).slice(0,6);
- if(arr.length){box.innerHTML='<h2>最近读过</h2><ul class="list">'+arr.map(function(x){var e=document.createElement('a');e.textContent=x.r.title;
-  return '<li><a href="'+root+x.k+'">'+e.innerHTML+'</a><div class="meta">'+(x.r.done?'已读完':'读到 '+Math.round((x.r.p||0)*100)+'%')+'</div></li>'}).join('')+'</ul>'}}
+ if(arr.length){box.innerHTML='<h2>최근 읽은 글</h2><ul class="list">'+arr.map(function(x){var e=document.createElement('a');e.textContent=x.r.title;
+  return '<li><a href="'+root+x.k+'">'+e.innerHTML+'</a><div class="meta">'+(x.r.done?'다 읽음':Math.round((x.r.p||0)*100)+'% 읽음')+'</div></li>'}).join('')+'</ul>'}}
 });})();
 """
 
-NAV = [("index.html", "首页"), ("companies/index.html", "公司"), ("topics/index.html", "专题"),
-       ("dates/index.html", "时间"), ("types/index.html", "类型"), ("wechat/index.html", "公众号"),
-       ("search.html", "搜索"), ("about.html", "关于")]
+NAV = [("index.html", "홈"), ("companies/index.html", "기업"), ("topics/index.html", "테마"),
+       ("dates/index.html", "날짜"), ("types/index.html", "유형"),
+       ("search.html", "검색"), ("about.html", "소개")]
 
 
 def analytics_tag():
-    """统计脚本：本机打开任意页面网址加 #notrack 后不再加载任何统计脚本，#track 恢复。"""
+    """통계 스크립트. 아무 페이지 주소에 #notrack 을 붙여 열면 그 기기에서는 통계 스크립트를 싣지 않고, #track 으로 되돌린다."""
     if not (GOATCOUNTER or BAIDU_TONGJI):
         return ""
     loads = []
@@ -495,7 +455,7 @@ def analytics_tag():
         loads.append("var g=document.createElement('script');g.async=true;g.src='//gc.zgo.at/count.js';"
                      "g.setAttribute('data-goatcounter','https://%s.goatcounter.com/count');document.head.appendChild(g);" % GOATCOUNTER)
     return ("<script>(function(){var skip=false;try{if(location.hash==='#notrack'){localStorage.setItem('skipgc','1');"
-            "alert('本设备的访问将不再计入统计')}if(location.hash==='#track'){localStorage.removeItem('skipgc')}"
+            "alert('이 기기의 방문은 앞으로 통계에 집계되지 않습니다')}if(location.hash==='#track'){localStorage.removeItem('skipgc')}"
             "skip=!!localStorage.getItem('skipgc')}catch(e){}if(skip)return;%s})();</script>" % "".join(loads))
 
 
@@ -505,20 +465,20 @@ def shell(title, body, depth, crumb="", section="", main_class="", progress=Fals
     head = (
         '<header class="top"><div class="bar"><a class="brand" href="{r}index.html">AI Berkshire</a>'
         '<nav class="main">{links}</nav><div class="tools">'
-        '<button onclick="aibSize(-1)" title="缩小字号">A−</button><button onclick="aibSize(1)" title="放大字号">A+</button>'
-        '<select id="theme" onchange="aibTheme(this.value)" title="外观"><option value="auto">自动</option>'
-        '<option value="light">浅色</option><option value="dark">深色</option></select>'
+        '<button onclick="aibSize(-1)" title="글자 작게">A−</button><button onclick="aibSize(1)" title="글자 크게">A+</button>'
+        '<select id="theme" onchange="aibTheme(this.value)" title="화면 모드"><option value="auto">자동</option>'
+        '<option value="light">밝게</option><option value="dark">어둡게</option></select>'
         '</div></div></header>'
     ).format(r=rel, links=links)
     crumb_html = '<div class="crumb">%s</div>' % crumb if crumb else ""
     return (
-        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
+        '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="theme-color" content="#fbfbf9">'
         '<title>%s · %s</title><link rel="stylesheet" href="%sstyle.css">'
         '<link rel="alternate" type="application/rss+xml" title="%s" href="%sfeed.xml">'
         '<script>%s</script>' + analytics_tag() + '</head><body data-root="%s" data-page="%s" data-title="%s">%s%s<main class="%s">%s%s</main>'
-        '<footer>%s ｜ <a href="%sabout.html">关于本站</a> ｜ 公众号「复利炼丹炉」 ｜ <a href="%s">GitHub 仓库</a> ｜ <a href="%sfeed.xml">RSS 订阅</a> ｜ 生成于 %s</footer></body></html>'
+        '<footer>%s | <a href="%sabout.html">사이트 소개</a> | <a href="%s">GitHub 저장소</a> | <a href="%sfeed.xml">RSS 구독</a> | 생성 시각 %s</footer></body></html>'
     ) % (html.escape(title), SITE_NAME, rel, SITE_NAME, rel, PREF_JS + READ_JS, rel, page, html.escape(title, quote=True),
          '<div class="progress"></div>' if progress else "", head, main_class, crumb_html, body,
          SITE_NAME, rel, REPO_URL, rel, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
@@ -526,13 +486,11 @@ def shell(title, body, depth, crumb="", section="", main_class="", progress=Fals
 
 def li(it, depth, show_group=True):
     rel = "../" * depth
-    bits = [it["date"] or "日期不详"]
+    bits = [it["date"] or "날짜 미상"]
     if show_group and it["group"]:
         bits.append(it["group"])
     if it["type"]:
         bits.append(it["type"])
-    if it.get("status"):
-        bits.append(it["status"])
     return '<li><a href="%s%s">%s</a><div class="meta">%s</div></li>' % (
         rel, it["url"], html.escape(it["title"]), " · ".join(html.escape(b) for b in bits))
 
@@ -540,6 +498,9 @@ def li(it, depth, show_group=True):
 def ul(items, depth, show_group=True, limit=None):
     rows = items if limit is None else items[:limit]
     return '<ul class="list">%s</ul>' % "".join(li(i, depth, show_group) for i in rows)
+
+
+
 
 
 # ---------- Markdown → HTML ----------
@@ -589,13 +550,19 @@ def convert(it, by_path, out_dir):
     return body, toc
 
 
-# ---------- 各类页面 ----------
+# ---------- 페이지 생성 ----------
 
 def write(out_dir, rel_path, content):
     p = os.path.join(out_dir, rel_path)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "w", encoding="utf-8") as f:
         f.write(content)
+
+
+# 테마 폴더 안의 개별 기업 보고서를 기업 페이지에 함께 걸 때 쓰는 이름 대응(제목 머리의 이름 -> 기업 페이지 이름)
+COMPANY_ALIAS = {"구글": "Google", "Alphabet": "Google", "알파벳": "Google", "테슬라": "Tesla",
+                 "Amazon": "아마존", "아마존": "아마존", "마이크로소프트": "마이크로소프트", "애플": "애플"}
+HOME = "홈"
 
 
 def build(out_dir):
@@ -610,39 +577,33 @@ def build(out_dir):
     companies = defaultdict(list)
     topics = defaultdict(list)
     screens = defaultdict(list)
-    wechat = defaultdict(list)
     months = defaultdict(list)
     types = defaultdict(list)
     for it in items:
-        if it["bucket"] == "公司":
+        if it["bucket"] == B_COMPANY:
             companies[it["group"]].append(it)
-        elif it["bucket"] == "公众号发表":
-            wechat[it["group"]].append(it)
-            companies[it["group"]].append(it)
-        elif it["bucket"] == "筛选池":
+        elif it["bucket"] == B_SCREEN:
             screens[it["group"]].append(it)
-        elif it["bucket"] == "实盘记录":
-            topics["实盘记录"].append(it)
         else:
             topics[it["group"]].append(it)
         if it["date"]:
             months[it["date"][:7]].append(it)
         types[it["type"]].append(it)
 
-    # 专题目录里写单家公司的报告（如七姐妹逐家报告），同时挂到对应公司页
-    alias = {"谷歌": "Google", "Alphabet": "Google", "特斯拉": "Tesla", "Amazon": "亚马逊", "微软": "微软", "苹果": "苹果", "贵州茅台": "茅台"}
+    # 테마 폴더에 있는 개별 기업 보고서(예: 빅테크 7개사를 한 곳씩 다룬 보고서)는 해당 기업 페이지에도 건다
+    alias = COMPANY_ALIAS
     names = sorted(set(companies) | set(alias), key=len, reverse=True)
     for it in items:
-        if it["bucket"] not in ("专题",):
+        if it["bucket"] not in (B_THEME,):
             continue
         t = it["title"].strip()
         hit = None
         for n in names:
-            if re.match(re.escape(n) + r"(（|\(|：|:|\s)", t):
+            if re.match(re.escape(n) + r"(\(|:|\s)", t):
                 hit = alias.get(n, n)
                 break
         if not hit:
-            m = re.match(r"^([^（(：:\s]{1,12})（([A-Z0-9]{1,6}(\.[A-Z]{1,2})?)）", t)
+            m = re.match(r"^([^(:\s]{1,12})\s?\(([A-Z0-9]{1,6}(\.[A-Z]{1,2})?)\)", t)
             if m:
                 hit = alias.get(m.group(1), m.group(1))
         if hit and it not in companies[hit]:
@@ -651,7 +612,7 @@ def build(out_dir):
     for c in companies:
         companies[c].sort(key=lambda x: x["date"] or "", reverse=True)
 
-    # 专题显示名：优先用目录 README 的标题
+    # 테마 표시 이름: 폴더 README의 제목을 먼저 쓴다
     tname = {}
     for it in items:
         if os.path.basename(it["path"]) != "README.md":
@@ -671,180 +632,165 @@ def build(out_dir):
 
     def group_link(it, depth):
         rel = "../" * depth
-        if it["bucket"] in ("公司", "公众号发表") and it["group"] in comp_url:
+        if it["bucket"] == B_COMPANY and it["group"] in comp_url:
             return '<a href="%s%s">%s</a>' % (rel, comp_url[it["group"]], html.escape(it["group"]))
-        if it["bucket"] == "筛选池" and it["group"] in screen_url:
+        if it["bucket"] == B_SCREEN and it["group"] in screen_url:
             return '<a href="%s%s">%s</a>' % (rel, screen_url[it["group"]], html.escape(it["group"]))
-        g = "实盘记录" if it["bucket"] == "实盘记录" else it["group"]
+        g = it["group"]
         if g in topic_url:
             return '<a href="%s%s">%s</a>' % (rel, topic_url[g], html.escape(disp(g)))
         return html.escape(disp(g))
 
-    # 报告页
+    # 보고서 페이지
     for it in items:
         body, toc = convert(it, by_path, out_dir)
         same = [x for x in (companies.get(it["group"]) or topics.get(it["group"]) or screens.get(it["group"]) or [])
                 if x["id"] != it["id"]][:12]
-        meta = " · ".join(x for x in [it["date"], it["type"], it.get("status", "")] if x)
-        head = "<h1>%s</h1><div class=\"meta\">%s ｜ %s ｜ <a href=\"%s/blob/main/%s\">GitHub 原文</a></div>" % (
+        meta = " · ".join(x for x in [it["date"], it["type"]] if x)
+        head = "<h1>%s</h1><div class=\"meta\">%s | %s | <a href=\"%s/blob/main/%s\">GitHub 원문</a></div>" % (
             html.escape(it["title"]), group_link(it, 1), html.escape(meta), REPO_URL, quote(it["path"]))
         if toc:
-            head += '<details class="toc"><summary>目录</summary>%s</details>' % toc
+            head += '<details class="toc"><summary>목차</summary>%s</details>' % toc
         tail = ""
         issue = "%s/issues/new?%s" % (REPO_URL, "&".join("%s=%s" % (k, quote(v, safe="")) for k, v in [
             ("template", "data_error.yml"), ("title", "[Data] " + it["title"][:60]),
-            ("ticker", it["group"] if it["bucket"] in ("公司", "公众号发表") else ""),
-            ("source", "%s （阅读站：%s%s）" % (it["path"], SITE_URL, it["url"]))]))
-        tail += ('<p class="wxline">精选研究与报告之外的判断，首发在公众号「复利炼丹炉」'
-                 ' · <a href="../about.html">扫码关注</a>'
-                 '<span class="fix">发现数据错误？<a href="%s" rel="nofollow">提交纠错</a>（需附正确值与来源）</span></p>') % html.escape(issue)
+            ("ticker", it["group"] if it["bucket"] == B_COMPANY else ""),
+            ("source", "%s (읽기 사이트: %s%s)" % (it["path"], SITE_URL, it["url"]))]))
+        tail += ('<p class="fixline">데이터 오류를 찾았다면 <a href="%s" rel="nofollow">오류 제보</a>'
+                 '(올바른 값과 출처를 함께 적는다)</p>') % html.escape(issue)
         if it.get("_work"):
-            tail += ('<h2>底稿与核验（GitHub）</h2><div class="meta">这些文件不在阅读站上展示，点开为 GitHub 原文。</div>'
+            tail += ('<h2>초안과 검증 기록 (GitHub)</h2><div class="meta">이 파일들은 읽기 사이트에 싣지 않는다. 누르면 GitHub 원문이 열린다.</div>'
                      '<ul class="list work">%s</ul>') % "".join(
                 '<li><a href="%s/blob/main/%s">%s</a><div class="meta">%s · %s</div></li>' % (
                     REPO_URL, quote(w["path"]), html.escape(w["title"]), html.escape(w["_why"]),
                     html.escape(w["path"][len(os.path.dirname(it["path"])) + 1:] if w["path"].startswith(os.path.dirname(it["path"]) + "/") else w["path"]))
                 for w in it["_work"])
         if same:
-            tail += "<h2>同一专题的其他报告</h2>" + ul(same, 1, show_group=False)
-        crumb = '<a href="../index.html">首页</a> › %s' % group_link(it, 1)
-        side = '<aside class="side"><div class="toc"><div class="meta">本文目录</div>%s</div></aside>' % toc if toc else "<aside class=\"side\"></aside>"
+            tail += "<h2>같은 묶음의 다른 보고서</h2>" + ul(same, 1, show_group=False)
+        crumb = '<a href="../index.html">%s</a> › %s' % (HOME, group_link(it, 1))
+        side = '<aside class="side"><div class="toc"><div class="meta">이 글의 목차</div>%s</div></aside>' % toc if toc else "<aside class=\"side\"></aside>"
         page = '<div class="layout"><div>%s<article>%s</article>%s</div>%s</div>' % (head, body, tail, side)
         write(out_dir, it["url"], shell(it["title"], page, 1, crumb, main_class="doc", progress=True, page=it["url"]))
 
-    # 公司索引与公司页
+    # 기업 색인과 기업 페이지
     def company_page(name, rows):
         groups = defaultdict(list)
         for r in rows:
-            key = ("公众号定稿" if r.get("status") == "待发布" else "公众号发表") if r["bucket"] == "公众号发表" else r["type"]
-            groups[key].append(r)
-        order = ["导读", "公众号定稿", "公众号发表"] + TYPE_ORDER
-        parts = ["<h1>%s</h1><div class=\"meta\">共 %d 篇，最近更新 %s</div>" % (
+            groups[r["type"]].append(r)
+        order = [T_GUIDE] + TYPE_ORDER
+        parts = ["<h1>%s</h1><div class=\"meta\">모두 %d건, 최근 업데이트 %s</div>" % (
             html.escape(name), len(rows), rows[0]["date"] if rows and rows[0]["date"] else "—")]
         for k in order + [k for k in groups if k not in order]:
             if k in groups:
-                parts.append("<h2>%s（%d）</h2>%s" % (html.escape(k), len(groups[k]), ul(groups[k], 2, show_group=False)))
+                parts.append("<h2>%s (%d)</h2>%s" % (html.escape(k), len(groups[k]), ul(groups[k], 2, show_group=False)))
         return "".join(parts)
 
     for c, rows in companies.items():
         write(out_dir, comp_url[c], shell(c, company_page(c, rows), 2,
-                                          '<a href="../../index.html">首页</a> › <a href="../index.html">公司</a>'))
+                                          '<a href="../../index.html">%s</a> › <a href="../index.html">기업</a>' % HOME))
     letters = defaultdict(list)
     for c in companies:
         letters[initial(c)].append(c)
     top = sorted(companies, key=lambda c: -len(companies[c]))[:24]
-    body = "<h1>按公司</h1><div class=\"meta\">%d 家公司，%d 篇报告</div><h2>报告最多的公司</h2><div class=\"grid\">%s</div>" % (
+    body = "<h1>기업별</h1><div class=\"meta\">기업 %d곳, 보고서 %d건</div><h2>보고서가 많은 기업</h2><div class=\"grid\">%s</div>" % (
         len(companies), sum(len(v) for v in companies.values()),
         "".join('<a class="btn" href="../%s">%s %d</a>' % (comp_url[c], html.escape(c), len(companies[c])) for c in top))
-    body += "<h2>全部公司（按拼音首字母）</h2>"
+    body += "<h2>전체 기업 (알파벳·가나다순)</h2>"
     for L in sorted(letters):
-        names = sorted(letters[L], key=lambda c: lazy_pinyin(c))
+        names = sorted(letters[L], key=lambda c: (c.casefold(), c))
         body += "<h3>%s</h3><ul class=\"list idx\">%s</ul>" % (L, "".join(
-            '<li><a href="../%s">%s</a><div class="meta">%d 篇 · 最近 %s</div></li>' % (
+            '<li><a href="../%s">%s</a><div class="meta">%d건 · 최근 %s</div></li>' % (
                 comp_url[c], html.escape(c), len(companies[c]), companies[c][0]["date"] or "—") for c in names))
-    write(out_dir, "companies/index.html", shell("按公司", body, 1, section="公司"))
+    write(out_dir, "companies/index.html", shell("기업별", body, 1, section="기업"))
 
-    # 专题
+    # 테마
     def simple_group_page(name, rows, depth, crumb):
         by_series = defaultdict(list)
         for r in rows:
             by_series[r["series"] or ""].append(r)
-        parts = ["<h1>%s</h1><div class=\"meta\">共 %d 篇</div>" % (html.escape(name), len(rows))]
+        parts = ["<h1>%s</h1><div class=\"meta\">모두 %d건</div>" % (html.escape(name), len(rows))]
         if len(by_series) > 1:
             for s in sorted(by_series, key=lambda s: (s == "", s), reverse=True):
-                parts.append("<h2>%s（%d）</h2>%s" % (html.escape(s or "主报告"), len(by_series[s]), ul(by_series[s], depth, show_group=False)))
+                parts.append("<h2>%s (%d)</h2>%s" % (html.escape(s or "주 보고서"), len(by_series[s]), ul(by_series[s], depth, show_group=False)))
         else:
             parts.append(ul(rows, depth, show_group=False))
         return shell(name, "".join(parts), depth, crumb)
 
     for t, rows in topics.items():
-        write(out_dir, topic_url[t], simple_group_page(disp(t), rows, 2, '<a href="../../index.html">首页</a> › <a href="../index.html">专题</a>'))
+        write(out_dir, topic_url[t], simple_group_page(
+            disp(t), rows, 2, '<a href="../../index.html">%s</a> › <a href="../index.html">테마</a>' % HOME))
     for s, rows in screens.items():
-        write(out_dir, screen_url[s], simple_group_page(s, rows, 2, '<a href="../../index.html">首页</a> › <a href="../../topics/index.html">专题</a>'))
+        write(out_dir, screen_url[s], simple_group_page(
+            s, rows, 2, '<a href="../../index.html">%s</a> › <a href="../../topics/index.html">테마</a>' % HOME))
     tnames = sorted(topics, key=lambda t: topics[t][0]["date"] or "", reverse=True)
-    body = "<h1>专题与横评</h1><ul class=\"list\">%s</ul>" % "".join(
-        '<li><a href="../%s">%s</a><div class="meta">%d 篇 · 最近 %s</div></li>' % (
+    body = "<h1>테마와 비교</h1><ul class=\"list\">%s</ul>" % "".join(
+        '<li><a href="../%s">%s</a><div class="meta">%d건 · 최근 %s</div></li>' % (
             topic_url[t], html.escape(disp(t)), len(topics[t]), topics[t][0]["date"] or "—") for t in tnames)
-    body += "<h2>筛选池与召回池</h2><ul class=\"list\">%s</ul>" % "".join(
-        '<li><a href="../%s">%s</a><div class="meta">%d 篇 · 最近 %s</div></li>' % (
+    body += "<h2>스크리닝 풀</h2><ul class=\"list\">%s</ul>" % "".join(
+        '<li><a href="../%s">%s</a><div class="meta">%d건 · 최근 %s</div></li>' % (
             screen_url[s], html.escape(s), len(screens[s]), screens[s][0]["date"] or "—")
         for s in sorted(screens, key=lambda s: screens[s][0]["date"] or "", reverse=True))
-    write(out_dir, "topics/index.html", shell("专题", body, 1, section="专题"))
+    write(out_dir, "topics/index.html", shell("테마", body, 1, section="테마"))
 
-    # 时间
+    # 날짜
     years = defaultdict(list)
     for m in months:
         years[m[:4]].append(m)
-    body = "<h1>按时间</h1>"
+    body = "<h1>날짜별</h1>"
     for y in sorted(years, reverse=True):
-        body += "<h2>%s 年</h2><div class=\"grid\">%s</div>" % (y, "".join(
-            '<a class="btn" href="%s.html">%s 月 %d</a>' % (m, int(m[5:]), len(months[m])) for m in sorted(years[y], reverse=True)))
-    write(out_dir, "dates/index.html", shell("按时间", body, 1, section="时间"))
+        body += "<h2>%s년</h2><div class=\"grid\">%s</div>" % (y, "".join(
+            '<a class="btn" href="%s.html">%d월 %d</a>' % (m, int(m[5:]), len(months[m])) for m in sorted(years[y], reverse=True)))
+    write(out_dir, "dates/index.html", shell("날짜별", body, 1, section="날짜"))
     for m, rows in months.items():
         main = [r for r in rows if r["bucket"] not in NOISE_BUCKETS]
         noise = [r for r in rows if r["bucket"] in NOISE_BUCKETS]
-        body = "<h1>%s 年 %d 月</h1><div class=\"meta\">%d 篇</div>%s" % (m[:4], int(m[5:]), len(rows), ul(main, 1))
+        body = "<h1>%s년 %d월</h1><div class=\"meta\">%d건</div>%s" % (m[:4], int(m[5:]), len(rows), ul(main, 1))
         if noise:
-            body += "<details><summary>筛选池与召回池日报（%d）</summary>%s</details>" % (len(noise), ul(noise, 1))
-        write(out_dir, "dates/%s.html" % m, shell("%s 年 %d 月" % (m[:4], int(m[5:])), body, 1,
-                                                   '<a href="../index.html">首页</a> › <a href="index.html">时间</a>'))
+            body += "<details><summary>스크리닝 풀 일일 보고 (%d)</summary>%s</details>" % (len(noise), ul(noise, 1))
+        write(out_dir, "dates/%s.html" % m, shell("%s년 %d월" % (m[:4], int(m[5:])), body, 1,
+                                                   '<a href="../index.html">%s</a> › <a href="index.html">날짜</a>' % HOME))
 
-    # 类型
+    # 유형
     tlist = [t for t in TYPE_ORDER if t in types] + [t for t in types if t not in TYPE_ORDER]
-    body = "<h1>按类型</h1><div class=\"grid\">%s</div>" % "".join(
+    body = "<h1>유형별</h1><div class=\"grid\">%s</div>" % "".join(
         '<a class="btn" href="%s.html">%s %d</a>' % (slug(t), html.escape(t), len(types[t])) for t in tlist)
-    write(out_dir, "types/index.html", shell("按类型", body, 1, section="类型"))
+    write(out_dir, "types/index.html", shell("유형별", body, 1, section="유형"))
     for t in tlist:
         rows = types[t]
         main = [r for r in rows if r["bucket"] not in NOISE_BUCKETS]
         noise = [r for r in rows if r["bucket"] in NOISE_BUCKETS]
-        body = "<h1>%s</h1><div class=\"meta\">%d 篇</div>%s" % (html.escape(t), len(rows), ul(main, 1))
+        body = "<h1>%s</h1><div class=\"meta\">%d건</div>%s" % (html.escape(t), len(rows), ul(main, 1))
         if noise:
-            body += "<details><summary>筛选池与召回池（%d）</summary>%s</details>" % (len(noise), ul(noise, 1))
-        write(out_dir, "types/%s.html" % slug(t), shell(t, body, 1, '<a href="../index.html">首页</a> › <a href="index.html">类型</a>'))
+            body += "<details><summary>스크리닝 풀 (%d)</summary>%s</details>" % (len(noise), ul(noise, 1))
+        write(out_dir, "types/%s.html" % slug(t), shell(
+            t, body, 1, '<a href="../index.html">%s</a> › <a href="index.html">유형</a>' % HOME))
 
-    # 公众号发表
-    wrows = sorted((r for rows in wechat.values() for r in rows), key=lambda r: r["date"], reverse=True)
-    ready = [r for r in wrows if r.get("status") == "待发布"]
-    published = [r for r in wrows if r.get("status") != "待发布"]
-    body = "<h1>公众号文章</h1><div class=\"meta\">已发表 %d 篇，待发布定稿 %d 篇</div>" % (len(published), len(ready))
-    if ready:
-        body += "<h2>待发布定稿</h2>" + ul(ready, 1)
-    body += "<h2>已发表</h2>" + ul(published, 1)
-    write(out_dir, "wechat/index.html", shell("公众号", body, 1, section="公众号"))
-
-    # 搜索
+    # 검색
     sdata = [{"t": i["title"], "g": i["group"], "k": i["type"], "d": i["date"], "u": i["url"]} for i in items]
     write(out_dir, "search.json", json.dumps(sdata, ensure_ascii=False, separators=(",", ":")))
-    body = ("<h1>搜索</h1><p>输入公司名、关键词或日期（如 2026-09），按标题、公司、类型匹配。</p>"
-            '<input class="q" id="q" type="search" placeholder="例如：拼多多 财报" autofocus>'
+    body = ("<h1>검색</h1><p>기업명, 키워드, 날짜(예: 2026-09)를 넣는다. 제목·기업·유형에서 찾는다.</p>"
+            '<input class="q" id="q" type="search" placeholder="예: 엔비디아 실적" autofocus>'
             '<div class="meta" id="n"></div><ul class="list" id="out"></ul>'
             "<script>var D=null;function esc(s){return s.replace(/[&<>\"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}"
             "function run(){var q=document.getElementById('q').value.trim().toLowerCase();var out=document.getElementById('out'),n=document.getElementById('n');"
             "if(!q){out.innerHTML='';n.textContent='';return}var ws=q.split(/\\s+/);var r=D.filter(function(x){var s=(x.t+' '+x.g+' '+x.k+' '+x.d).toLowerCase();return ws.every(function(w){return s.indexOf(w)>=0})});"
-            "n.textContent='共 '+r.length+' 条'+(r.length>200?'，只显示前 200 条':'');"
-            "if(!r.length){out.innerHTML='<li>没找到相关报告。想看这家公司的研究，可以在公众号「复利炼丹炉」留言（<a href=\"about.html\">扫码</a>），或在 GitHub <a rel=\"nofollow\" href=\"" + REPO_URL + "/issues/new?template=suggestion.yml&title='+encodeURIComponent('[建议] 希望研究：'+q)+'\">提研究建议</a>。</li>';}"
+            "n.textContent='모두 '+r.length+'건'+(r.length>200?', 앞의 200건만 표시':'');"
+            "if(!r.length){out.innerHTML='<li>해당하는 보고서가 없다. 이 기업의 연구를 보고 싶다면 GitHub에서 <a rel=\"nofollow\" href=\"" + REPO_URL + "/issues/new?template=suggestion.yml&title='+encodeURIComponent('[제안] 연구 요청: '+q)+'\">연구를 제안</a>할 수 있다.</li>';}"
             "else{out.innerHTML=r.slice(0,200).map(function(x){return '<li><a href=\"'+x.u+'\">'+esc(x.t)+'</a><div class=\"meta\">'+esc([x.d,x.g,x.k].filter(Boolean).join(' · '))+'</div></li>'}).join('')}"
             "clearTimeout(window._lt);window._lt=setTimeout(function(){if(q.length>=2&&q!==window._lq&&window._hmt){window._lq=q;"
-            "window._hmt.push(['_trackEvent','站内搜索',r.length?'有结果':'无结果',q])}},1500)}"
+            "window._hmt.push(['_trackEvent','사이트 검색',r.length?'결과 있음':'결과 없음',q])}},1500)}"
             "fetch('search.json').then(function(r){return r.json()}).then(function(d){D=d;document.getElementById('q').addEventListener('input',run);run()});</script>")
-    write(out_dir, "search.html", shell("搜索", body, 0, section="搜索"))
+    write(out_dir, "search.html", shell("검색", body, 0, section="검색"))
 
-    # 关于页与公众号二维码
-    qr_dst = os.path.join(out_dir, "files", "assets", "wechat-qr.png")
-    os.makedirs(os.path.dirname(qr_dst), exist_ok=True)
-    with open(qr_dst, "wb") as fh:
-        fh.write(open(os.path.join(ROOT, "assets", "wechat-qr.png"), "rb").read()
-                 if os.path.isfile(os.path.join(ROOT, "assets", "wechat-qr.png")) else blob("assets/wechat-qr.png"))
-    n_wechat = len(published)
-    write(out_dir, "about.html", shell("关于", about_page(len(items), len(companies), n_wechat,
-                                                         items[0]["date"] if items else "—"), 0, section="关于"))
+    # 소개 페이지
+    write(out_dir, "about.html", shell("소개", about_page(len(items), len(companies),
+                                                        items[0]["date"] if items else "—"), 0, section="소개"))
 
-    # 首页
+    # 첫 화면
     pool, seen_titles = [], set()
     for i in items:
         tkey = re.sub(r"\s+", "", i["title"])
-        if tkey in seen_titles or i["bucket"] in NOISE_BUCKETS or i["series"] == "evidence" or i["type"] == "导读":
+        if tkey in seen_titles or i["bucket"] in NOISE_BUCKETS or i["series"] == "evidence" or i["type"] == T_GUIDE:
             continue
         seen_titles.add(tkey)
         pool.append(i)
@@ -859,35 +805,35 @@ def build(out_dir):
         rows = bundles[key]
         if len(rows) >= 3:
             used.add(key)
-            url = comp_url.get(i["group"]) if i["bucket"] in ("公司", "公众号发表") else (
+            url = comp_url.get(i["group"]) if i["bucket"] == B_COMPANY else (
                 topic_url.get(i["group"]) or screen_url.get(i["group"]))
-            name = i["group"] if i["bucket"] in ("公司", "公众号发表") else disp(i["group"])
-            titles = "；".join(r["title"].split("：")[0].split("独立")[0] for r in rows[:7])
-            recent_rows.append('<li><a href="%s">%s（%d 篇）</a><div class="meta">%s · %s%s</div></li>' % (
+            name = i["group"] if i["bucket"] == B_COMPANY else disp(i["group"])
+            titles = "; ".join(r["title"].split(":")[0].split("독립")[0].strip() for r in rows[:7])
+            recent_rows.append('<li><a href="%s">%s (%d건)</a><div class="meta">%s · %s%s</div></li>' % (
                 url or rows[0]["url"], html.escape(name), len(rows), i["date"], html.escape(titles[:90]),
-                "等" if len(rows) > 7 else ""))
+                " 등" if len(rows) > 7 else ""))
         else:
             recent_rows.append(li(i, 0))
         shown += 1
         if shown >= 30:
             break
-    body = "<h1>%s</h1><p class=\"meta\">%d 篇报告 · %d 家公司 · 最近更新 %s</p>" % (
+    body = "<h1>%s</h1><p class=\"meta\">보고서 %d건 · 기업 %d곳 · 최근 업데이트 %s</p>" % (
         SITE_NAME, len(items), len(companies), items[0]["date"] if items else "—")
     body += "<div class=\"grid big\">%s</div>" % "".join(
         '<a class="btn" href="%s">%s</a>' % (u, t) for u, t in [
-            ("companies/index.html", "按公司"), ("topics/index.html", "专题与横评"), ("dates/index.html", "按时间"),
-            ("types/index.html", "按类型"), ("wechat/index.html", "公众号文章"), ("search.html", "搜索")])
+            ("companies/index.html", "기업별"), ("topics/index.html", "테마와 비교"), ("dates/index.html", "날짜별"),
+            ("types/index.html", "유형별"), ("search.html", "검색")])
     body += '<div id="recent-read"></div>'
-    body += "<h2>最近更新</h2><ul class=\"list\">%s</ul>" % "".join(recent_rows)
-    body += "<h2>报告最多的公司</h2><div class=\"grid\">%s</div>" % "".join(
+    body += "<h2>최근 업데이트</h2><ul class=\"list\">%s</ul>" % "".join(recent_rows)
+    body += "<h2>보고서가 많은 기업</h2><div class=\"grid\">%s</div>" % "".join(
         '<a class="btn" href="%s">%s %d</a>' % (comp_url[c], html.escape(c), len(companies[c])) for c in top[:16])
-    write(out_dir, "index.html", shell("首页", '<div class="hero">' + body + "</div>", 0, section="首页"))
-    write(out_dir, "404.html", shell("没有这一页", "<h1>没有这一页</h1><p><a href=\"index.html\">回首页</a></p>", 0))
+    write(out_dir, "index.html", shell(HOME, '<div class="hero">' + body + "</div>", 0, section=HOME))
+    write(out_dir, "404.html", shell("없는 페이지", "<h1>없는 페이지</h1><p><a href=\"index.html\">홈으로</a></p>", 0))
 
     # RSS
     feed_items = [i for i in items if i["bucket"] not in NOISE_BUCKETS][:50]
-    base = "https://xbtlin.github.io/ai-berkshire/"
-    rss = ['<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>%s</title><link>%s</link><description>投资研究报告</description>' % (SITE_NAME, base)]
+    base = SITE_URL
+    rss = ['<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>%s</title><link>%s</link><description>투자 연구 보고서</description>' % (SITE_NAME, base)]
     for i in feed_items:
         rss.append("<item><title>%s</title><link>%s%s</link><guid>%s%s</guid><pubDate>%s</pubDate><description>%s</description></item>" % (
             html.escape(i["title"]), base, i["url"], base, i["url"],
@@ -896,11 +842,7 @@ def build(out_dir):
     rss.append("</channel></rss>")
     write(out_dir, "feed.xml", "".join(rss))
 
-    # 原帖阅读器直接加载来源站点；页面本身只包含来源索引与辅助摘要。
-    if available("reader/duan-popmart.html"):
-        write(out_dir, "duan-popmart.html", read("reader/duan-popmart.html"))
-
-    print("生成 %d 篇报告页，%d 家公司，%d 个专题，%d 个月份 -> %s" % (len(items), len(companies), len(topics) + len(screens), len(months), out_dir))
+    print("보고서 페이지 %d건, 기업 %d곳, 테마 %d개, 월 %d개 생성 -> %s" % (len(items), len(companies), len(topics) + len(screens), len(months), out_dir))
 
 
 if __name__ == "__main__":

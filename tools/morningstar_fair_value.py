@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-从 Morningstar 筛选器 API 抓取所有有公允价值估计的股票，
-计算潜在涨幅，输出 Top 100。
+Morningstar 스크리너 API 에서 공정가치 추정치가 있는 모든 종목을 가져와
+잠재 상승률을 계산하고 Top 100 을 출력한다.
 """
 
 import json
 import subprocess
+import sys
 import time
 import csv
 import os
@@ -28,6 +29,19 @@ PAGE_SIZE = 100
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 
+def _safe_stdio():
+    """콘솔 인코딩(예: Windows cp949)으로 표현할 수 없는 문자(이모지 등) 때문에 죽지 않게 한다."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream.isatty() or os.environ.get("PYTHONIOENCODING"):
+                stream.reconfigure(errors="replace")
+            else:
+                # 파이프·리다이렉트 출력은 UTF-8 로 고정한다(중국어 종목명·기호가 '?' 로 뭉개지지 않게)
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def fetch_page(page: int) -> dict:
     url = API_BASE.format(page=page, page_size=PAGE_SIZE)
     result = subprocess.run(
@@ -45,22 +59,23 @@ def extract_ticker(tenforeid: str) -> str:
 
 
 def main():
+    _safe_stdio()
     print(f"\n{'='*80}")
-    print(f"  Morningstar 公允价值筛选  {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Morningstar 공정가치 스크리닝  {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}\n")
 
-    # 第一页获取总数
-    print("  正在获取第 1 页...")
+    # 첫 페이지에서 전체 건수를 얻는다
+    print("  1페이지 가져오는 중...")
     data = fetch_page(1)
     total = data.get("total", 0)
     all_rows = data.get("rows", [])
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    print(f"  共 {total} 只股票，{total_pages} 页\n")
+    print(f"  총 {total}개 종목, {total_pages}페이지\n")
 
-    # 抓取剩余页
+    # 나머지 페이지 수집
     for page in range(2, total_pages + 1):
         if page % 10 == 0 or page == total_pages:
-            print(f"  正在获取第 {page}/{total_pages} 页...")
+            print(f"  {page}/{total_pages}페이지 가져오는 중...")
         try:
             data = fetch_page(page)
             rows = data.get("rows", [])
@@ -69,12 +84,12 @@ def main():
             all_rows.extend(rows)
             time.sleep(0.3)
         except Exception as e:
-            print(f"  ⚠️  第 {page} 页失败: {e}")
+            print(f"  ⚠️  {page}페이지 실패: {e}")
             time.sleep(1)
 
-    print(f"\n  共获取 {len(all_rows)} 条记录")
+    print(f"\n  총 {len(all_rows)}건 수집")
 
-    # 计算潜在涨幅
+    # 잠재 상승률 계산
     stocks = []
     for row in all_rows:
         fair_value = row.get("FairValueEstimate")
@@ -98,14 +113,14 @@ def main():
             "industry": row.get("IndustryName", ""),
         })
 
-    # 按潜在涨幅排序
+    # 잠재 상승률 순으로 정렬
     stocks.sort(key=lambda x: x["upside_pct"], reverse=True)
 
-    # 输出 Top 100
+    # Top 100 출력
     print(f"\n{'='*80}")
-    print(f"  潜在涨幅 Top 100")
+    print(f"  잠재 상승률 Top 100")
     print(f"{'='*80}\n")
-    print(f"  {'排名':>4} {'代码':<8} {'公司名':<35} {'现价':>10} {'公允价值':>10} {'潜在涨幅':>8} {'星级':>4} {'护城河':<8} {'行业':<20}")
+    print(f"  {'순위':>4} {'티커':<8} {'회사명':<35} {'현재가':>10} {'공정가치':>10} {'잠재 상승률':>8} {'별점':>4} {'해자':<8} {'산업':<20}")
     print(f"  {'-'*4} {'-'*8} {'-'*35} {'-'*10} {'-'*10} {'-'*8} {'-'*4} {'-'*8} {'-'*20}")
 
     for i, s in enumerate(stocks[:100], 1):
@@ -117,7 +132,7 @@ def main():
             f"{s['moat']:<8} {s['industry'][:20]:<20}"
         )
 
-    # 保存完整数据到 CSV
+    # 전체 데이터를 CSV 로 저장
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     today = datetime.now().strftime("%Y%m%d")
     csv_path = os.path.join(OUTPUT_DIR, f"morningstar_fair_value_{today}.csv")
@@ -131,21 +146,21 @@ def main():
         for i, s in enumerate(stocks, 1):
             writer.writerow({"rank": i, **s})
 
-    print(f"\n  完整数据已保存到: {csv_path}")
-    print(f"  共 {len(stocks)} 只股票（按潜在涨幅排序）\n")
+    print(f"\n  전체 데이터 저장 위치: {csv_path}")
+    print(f"  총 {len(stocks)}개 종목(잠재 상승률 순)\n")
 
-    # 统计摘要
+    # 통계 요약
     undervalued = [s for s in stocks if s["upside_pct"] > 0]
     overvalued = [s for s in stocks if s["upside_pct"] < 0]
-    print(f"  📊 统计摘要:")
-    print(f"     低估股票: {len(undervalued)} 只 ({len(undervalued)/len(stocks)*100:.0f}%)")
-    print(f"     高估股票: {len(overvalued)} 只 ({len(overvalued)/len(stocks)*100:.0f}%)")
+    print(f"  📊 통계 요약:")
+    print(f"     저평가 종목: {len(undervalued)}개 ({len(undervalued)/len(stocks)*100:.0f}%)")
+    print(f"     고평가 종목: {len(overvalued)}개 ({len(overvalued)/len(stocks)*100:.0f}%)")
     if undervalued:
         avg_upside = sum(s["upside_pct"] for s in undervalued) / len(undervalued)
-        print(f"     低估股票平均潜在涨幅: +{avg_upside:.1f}%")
+        print(f"     저평가 종목 평균 잠재 상승률: +{avg_upside:.1f}%")
     if stocks:
         wide_moat_undervalued = [s for s in stocks if s["moat"] == "Wide" and s["upside_pct"] > 0]
-        print(f"     宽护城河+低估: {len(wide_moat_undervalued)} 只")
+        print(f"     넓은 해자 + 저평가: {len(wide_moat_undervalued)}개")
 
 
 if __name__ == "__main__":

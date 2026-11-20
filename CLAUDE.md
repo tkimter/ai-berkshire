@@ -5,12 +5,14 @@
 - 사용자에게 하는 **모든 대답은 한국어**로 한다.
 - 영어는 불가피한 경우(고유명사, 코드·명령어, 마땅한 번역어가 없는 기술 용어)에만 단어 수준으로 쓴다.
 - 보고서 본문, 새로 만드는 **파일명과 폴더명**, 커밋 메시지도 모두 **한국어**로 쓴다.
-- 중국어는 쓰지 않는다. 예외는 원문과 일치해야 하는 것뿐이다: 중국어 자료를 찾는 검색어, 중국 데이터 출처 이름(东方财富, 巨潮资讯 등), 원문 인용, 이미 있는 중국어 파일·폴더 경로.
-- 기존 중국어 보고서는 번역하거나 이름을 바꾸지 않고 그대로 둔다. 사용자가 요청할 때만 옮긴다.
+- 중국어는 쓰지 않는다. 예외는 원문과 일치해야 하는 것뿐이다: 중국어 자료를 찾는 검색어, 중국 데이터 출처 이름(东方财富, 巨潮资讯 등), 출처 목록의 원제목, 처음 나오는 고유명사의 괄호 병기.
+- 영어로 된 자료는 번역하지 않고 그대로 둔다.
+- 연구 대상은 한국·미국 기업을 중심으로 한 해외 기업이다. 중국 단일 기업 보고서는 저장소에 두지 않는다.
+- 위챗(WeChat)에는 발행하지 않는다. 발행용 글은 "게시글"이라고 부른다.
 
 ## 프로젝트 개요
 
-Claude Code 기반 가치투자 리서치 Skill 모음. 4대 거장 프레임워크: 버핏, 멍거, 돤융핑(段永平), 리루(李录).
+Claude Code 기반 가치투자 리서치 Skill 모음. 4대 거장 프레임워크: 버핏, 멍거, 돤융핑, 리루.
 
 이 저장소는 `xbtlin/ai-berkshire`(중국어 원본)를 포크해 한국어 기준으로 바꾼 것이다.
 
@@ -33,14 +35,14 @@ assets/          — 이미지 등 정적 자원
 reports/
 ├── AI산업연구/               — AI 산업 체인 전체 연구
 │   ├── AI5층케이크-산업전체연구-20260605.md
-│   └── AI5층케이크-공식계정-20260605.md
-├── 텐센트/                   — 텐센트의 모든 연구 보고서
-│   ├── 텐센트-research-20260408.md
-│   ├── 텐센트-earnings-2025Q4.md
-│   ├── 텐센트-management-20260409.md
-│   └── 텐센트-thesis.md
-├── 핀둬둬/                   — 핀둬둬의 모든 연구 보고서
-├── 팝마트/                   — 팝마트의 모든 연구 보고서
+│   └── AI5층케이크-게시글-20260605.md
+├── 엔비디아/                 — 엔비디아의 모든 연구 보고서
+│   ├── 엔비디아-research-20260408.md
+│   ├── 엔비디아-earnings-2025Q4.md
+│   ├── 엔비디아-management-20260409.md
+│   └── 엔비디아-thesis.md
+├── SK하이닉스/               — SK하이닉스의 모든 연구 보고서
+├── 애플/                     — 애플의 모든 연구 보고서
 ├── 원전-industry-20260409.md  — 산업 보고서는 루트에 둔다
 ├── AI컴퓨팅-funnel-20260509.md — 퍼널 스크리닝 보고서는 루트에 둔다
 ├── AI-로테이션판단-20260509.md — 테마 단위 종합 판단 보고서는 루트에 둔다
@@ -50,27 +52,25 @@ reports/
 
 ### 이름 규칙
 
-- 회사명·산업명은 한국에서 통용되는 한국어 표기를 쓴다(텐센트, 핀둬둬, 마오타이, 엔비디아). 통용 표기가 없으면 영문 사명을 쓴다.
+- 회사명·산업명은 한국에서 통용되는 한국어 표기를 쓴다(엔비디아, 애플, 마이크로소프트, SK하이닉스). 통용 표기가 없으면 영문 사명을 쓴다.
 - 파일명·폴더명에는 공백을 쓰지 않고 `-`로 잇는다.
-- **같은 회사의 기존 중국어 폴더가 있을 때**(예: `reports/腾讯/`): 새 보고서는 한국어 폴더(`reports/텐센트/`)에 쓰고,
-  `reports/_index/config.json`의 `aliases`에 `"腾讯": "텐센트"`를 추가해 색인에서 한 그룹으로 묶는다. 기존 폴더는 옮기지 않는다.
-- 과거 보고서를 참고하거나 thesis 파일을 찾을 때는 한국어 폴더와 기존 중국어 폴더를 **둘 다** 확인한다.
+- 기존 폴더 가운데 영문 이름(`Google`, `Meta`, `Tesla` 등)은 그대로 쓴다. 같은 회사의 폴더가 이미 있으면 새 폴더를 만들지 않고 그 폴더에 쓴다.
 
 ## 보고서 파일명 규칙
 
 | Skill | 파일명 형식 | 예시 |
 |------|---------|------|
-| /investment-team | `{회사명}/` 폴더에 4개 관점 + 최종보고서 | `reports/핀둬둬/최종보고서.md` |
-| /investment-research | `{회사명}-research-{YYYYMMDD}.md` | `reports/텐센트/텐센트-research-20260408.md` |
-| /investment-checklist | `{회사명}-checklist-{YYYYMMDD}.md` | `reports/텐센트/텐센트-checklist-20260408.md` |
+| /investment-team | `{회사명}/` 폴더에 4개 관점 + 최종보고서 | `reports/엔비디아/최종보고서.md` |
+| /investment-research | `{회사명}-research-{YYYYMMDD}.md` | `reports/엔비디아/엔비디아-research-20260408.md` |
+| /investment-checklist | `{회사명}-checklist-{YYYYMMDD}.md` | `reports/엔비디아/엔비디아-checklist-20260408.md` |
 | /industry-research | `{산업명}-industry-{YYYYMMDD}.md` (루트) | `reports/원전-industry-20260409.md` |
 | /industry-funnel | `{산업명}-funnel-{YYYYMMDD}.md` (루트) | `reports/AI컴퓨팅-funnel-20260509.md` |
-| /private-company-research | `{회사명}-private-{YYYYMMDD}.md` | `reports/바이트댄스/바이트댄스-private-20260408.md` |
-| /earnings-review | `{회사명}-earnings-{기간}.md` | `reports/텐센트/텐센트-earnings-2025Q4.md` |
-| /earnings-team | `{회사명}/` 폴더에 4대 거장 관점 + 연구초안 + 공식계정 글 + 독자리뷰 | `reports/텐센트/텐센트-earnings-2025Q4.md` (공식계정 최종본) |
-| /thesis-tracker | `{회사명}-thesis.md` (장기 관리) | `reports/텐센트/텐센트-thesis.md` |
+| /private-company-research | `{회사명}-private-{YYYYMMDD}.md` | `reports/SpaceX/SpaceX-private-20260408.md` |
+| /earnings-review | `{회사명}-earnings-{기간}.md` | `reports/엔비디아/엔비디아-earnings-2025Q4.md` |
+| /earnings-team | `{회사명}/` 폴더에 4대 거장 관점 + 연구초안 + 게시글 + 독자리뷰 | `reports/엔비디아/엔비디아-earnings-2025Q4.md` (게시글 최종본) |
+| /thesis-tracker | `{회사명}-thesis.md` (장기 관리) | `reports/엔비디아/엔비디아-thesis.md` |
 | /portfolio-review | `portfolio-latest.md` (루트, 계속 갱신) | `reports/portfolio-latest.md` |
-| /management-deep-dive | `{회사명}-management-{YYYYMMDD}.md` | `reports/텐센트/텐센트-management-20260409.md` |
+| /management-deep-dive | `{회사명}-management-{YYYYMMDD}.md` | `reports/엔비디아/엔비디아-management-20260409.md` |
 
 skill 정의에 적힌 저장 경로가 이 표와 다르면 이 표를 따른다.
 

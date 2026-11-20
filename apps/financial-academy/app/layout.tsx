@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "复利学堂 · 看懂一家公司",
-  description: "12 章财报课程、互动实验室与出师挑战。从财务数字，走向独立判断。",
+  title: "복리학당 · 한 회사를 제대로 읽기",
+  description: "12개 장의 실적 읽기 강의, 인터랙티브 실험실, 수료 도전. 재무 숫자에서 독립적인 판단으로.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="ko">
       <body className="antialiased">{children}</body>
     </html>
   );

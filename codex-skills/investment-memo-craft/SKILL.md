@@ -1,152 +1,154 @@
 ---
 name: investment-memo-craft
-description: Codex-only writing and layout overlay for AI Berkshire investment research reports. Use whenever Codex creates, rewrites, revises, or critiques company/industry/fund research reports, especially long-form Markdown reports that need financial rigor, readable business mechanics, contrarian analysis, valuation-to-action guidance, investor-specific recommendations, restrained typography, and clear buy/hold/sell signals. Do not use this to modify Claude Code slash-command sources.
+description: AI Berkshire 투자 연구 보고서를 위한 Codex 전용 글쓰기·레이아웃 보조 skill. Codex가 기업/산업/펀드 연구 보고서를 새로 쓰거나, 다시 쓰거나, 고치거나, 비평할 때 쓴다. 특히 재무 엄밀성, 읽기 쉬운 사업 메커니즘 설명, 역발상 분석, 밸류에이션에서 행동으로 이어지는 지침, 투자자 유형별 제안, 절제된 타이포그래피, 분명한 매수/보유/매도 신호가 필요한 장문 Markdown 보고서에 쓴다. Claude Code slash-command 원본을 수정하는 데는 쓰지 않는다.
 ---
 
 # Investment Memo Craft
 
-## Purpose
+## 목적
 
-Turn investment research into a decision-ready Codex research report. Keep the data discipline of the underlying research skill, but make the output easier for an investor to use: concrete business mechanics, sharp inverse thinking, explicit opportunity cost, action thresholds, and calm Markdown typography.
+투자 연구를 의사결정에 바로 쓸 수 있는 Codex 연구 보고서로 바꾼다. 바탕이 되는 연구 skill의 데이터 규율은 유지하면서, 투자자가 쓰기 쉽게 만든다. 구체적인 사업 메커니즘, 날카로운 역발상, 명시적인 기회비용, 행동 기준선, 차분한 Markdown 타이포그래피가 그 수단이다.
 
-Use this as a writing and judgment overlay. It does not replace financial-data rules, primary-source checks, valuation tools, or report audit tooling.
+이 skill은 글쓰기와 판단을 덧입히는 보조 계층이다. financial-data 규칙, 1차 자료 확인, 밸류에이션 도구, 보고서 감사 도구를 대체하지 않는다.
 
-For long-form AI Berkshire outputs, title the artifact as a "research report" by default. Use "investment memo" only when the user explicitly asks for a memo format.
+AI Berkshire의 장문 산출물은 기본적으로 "연구 보고서"라는 제목을 쓴다. "투자 메모"는 사용자가 메모 형식을 명시적으로 요청할 때만 쓴다.
 
-This is a Codex-only hand-written skill kept under `codex-skills/` for simple installation. Do not add a same-named `skills/investment-memo-craft.md` source unless intentionally adopting this workflow for Claude Code too.
+이 skill은 설치를 단순하게 하려고 `codex-skills/` 아래에 둔 Codex 전용 수작업 skill이다. 이 workflow를 Claude Code에도 의도적으로 도입하는 경우가 아니면 같은 이름의 `skills/investment-memo-craft.md` 원본을 만들지 않는다.
 
-## Core Workflow
+보고서 본문, 제목, 파일명은 모두 한국어로 쓴다.
 
-1. Open with context; reserve the full decision for after the evidence.
-   - In the first screen, state the research date, price, market cap, valuation, and a short thesis.
-   - Do not front-load the full buy/hold/sell table unless the user explicitly asks for an executive memo.
-   - Put the detailed recommendation, investor-specific actions, and price bands near the end, after business quality, risk, and valuation have been argued.
-   - Separate "good business" from "good investment at this price".
+## 핵심 Workflow
 
-2. Build the operating map before the philosophy.
-   - Include revenue structure, segment economics, unit drivers, and 3-5 year trends early.
-   - For asset-heavy businesses, show the key assets individually when they explain the moat.
-   - Explain the pricing mechanism, customer lock-in, cost structure, and reinvestment needs.
+1. 맥락으로 시작하고, 완전한 결정은 증거 뒤로 미룬다.
+   - 첫 화면에 연구 기준일, 주가, 시가총액, 밸류에이션, 짧은 투자 논거를 적는다.
+   - 사용자가 요약 메모를 명시적으로 요청하지 않는 한 매수/보유/매도 표 전체를 앞에 싣지 않는다.
+   - 상세 제안, 투자자 유형별 행동, 가격 구간은 사업의 질, 리스크, 밸류에이션을 논증한 뒤 끝부분에 둔다.
+   - "좋은 사업"과 "이 가격에서 좋은 투자"를 구분한다.
 
-3. Compress business essence into one memorable sentence.
-   - Prefer a sentence that describes who pays, why they pay, what is scarce, and what repeats.
-   - Avoid generic labels such as "industry leader" unless followed by the mechanism that makes leadership durable.
+2. 철학보다 사업 지도를 먼저 그린다.
+   - 매출 구조, 부문별 경제성, 단위 동인, 3-5년 추세를 앞부분에 넣는다.
+   - 자산 집약적 사업은 핵심 자산이 해자를 설명한다면 자산을 하나씩 보여 준다.
+   - 가격 결정 메커니즘, 고객 락인, 원가 구조, 재투자 필요를 설명한다.
 
-4. Make the moat falsifiable.
-   - Score or table the moat by source: brand/pricing power, switching cost, network effect, scale, cost advantage, regulation, resource scarcity, technology.
-   - Explain whether the moat widened or narrowed over the last 5 years.
-   - Ask what can destroy the moat, even if the answer is "not competitors, but regulation/weather/price paid".
+3. 사업의 본질을 기억에 남는 한 문장으로 압축한다.
+   - 누가 돈을 내는지, 왜 내는지, 무엇이 희소한지, 무엇이 반복되는지를 담은 문장이 좋다.
+   - "업계 선두" 같은 일반적인 표현은 그 지위를 지속시키는 메커니즘이 뒤따르지 않으면 쓰지 않는다.
 
-5. Do real inverse thinking.
-   - Include failure paths with probability, impact, and observable indicators.
-   - Write the strongest bear case in language a smart short seller or non-buyer would actually use.
-   - Explicitly identify the most likely analytical mistake.
+4. 해자를 반증 가능하게 만든다.
+   - 해자를 원천별로 평점을 매기거나 표로 정리한다: 브랜드/가격 결정력, 전환 비용, 네트워크 효과, 규모, 원가 우위, 규제, 자원 희소성, 기술.
+   - 지난 5년 동안 해자가 넓어졌는지 좁아졌는지 설명한다.
+   - 무엇이 해자를 무너뜨릴 수 있는지 묻는다. 답이 "경쟁사가 아니라 규제/기후/지불한 가격"이더라도 적는다.
 
-6. Evaluate management through capital allocation.
-   - Replace vague praise with decision history: acquisitions, divestitures, buybacks, dividends, leverage, reinvestment, strategic pivots.
-   - Judge incentives: insider ownership, controlling shareholder behavior, compensation, related-party transactions, and shareholder return policy.
-   - Ask whether the business depends on a person or on a system.
+5. 진짜 역발상을 한다.
+   - 실패 경로를 확률, 영향, 관찰 가능한 지표와 함께 싣는다.
+   - 가장 강한 약세 논리를, 똑똑한 공매도자나 매수를 거부하는 사람이 실제로 쓸 법한 언어로 쓴다.
+   - 가장 저지르기 쉬운 분석 오류를 명시한다.
 
-7. Connect industry trend to value capture.
-   - Distinguish civilization-level trend from investable company-level economics.
-   - Describe where the company sits in the value chain and who captures the profit pool.
-   - Identify whether TAM growth, pricing, utilization, or capital intensity is the real driver.
+6. 경영진은 자본 배분으로 평가한다.
+   - 막연한 칭찬 대신 의사결정 이력을 쓴다: 인수, 매각, 자사주 매입, 배당, 레버리지, 재투자, 전략 전환.
+   - 유인 구조를 판단한다: 내부자 지분, 지배주주의 행동, 보상, 특수관계자 거래, 주주환원 정책.
+   - 사업이 사람에 의존하는지 시스템에 의존하는지 묻는다.
 
-8. Convert valuation into action.
-   - Show current multiples, reverse DCF intuition, scenario valuation, historical comparison, and comparable companies when relevant.
-   - Include dividends or capital returns in expected return when they matter.
-   - Provide price bands, add signals, trim/sell signals, and what would change the thesis.
+7. 산업 흐름을 가치 포착과 연결한다.
+   - 문명 수준의 흐름과 투자 가능한 기업 수준의 경제성을 구분한다.
+   - 회사가 가치사슬의 어디에 있고 누가 이익 풀을 가져가는지 서술한다.
+   - TAM 성장, 가격, 가동률, 자본 집약도 가운데 무엇이 진짜 동인인지 가려낸다.
 
-9. Close with a decision memo.
-   - Include a summary table by business quality, moat, management, risk, trend, and valuation.
-   - Give distinct advice for empty-handed investors and existing holders.
-   - Include the action table here, not at the top, for long-form research reports.
-   - End by separating AI analysis confidence from actual investment certainty.
+8. 밸류에이션을 행동으로 바꾼다.
+   - 현재 멀티플, 역산 DCF의 직관, 시나리오 밸류에이션, 역사적 비교, 필요하면 비교 기업을 보여 준다.
+   - 배당이나 자본 환원이 중요하면 기대수익률에 포함한다.
+   - 가격 구간, 추가 매수 신호, 축소/매도 신호, 논거를 바꿀 조건을 제시한다.
 
-## Style Standards
+9. 의사결정 메모로 마무리한다.
+   - 사업의 질, 해자, 경영진, 리스크, 흐름, 밸류에이션별 요약표를 넣는다.
+   - 미보유 투자자와 기존 보유자에게 각각 다른 제안을 한다.
+   - 장문 연구 보고서에서는 행동 표를 맨 위가 아니라 여기에 둔다.
+   - 마지막에 AI 분석의 신뢰도와 실제 투자의 확실성을 구분한다.
 
-- Prefer concrete numbers and mechanisms over adjectives.
-- Use tables when they reduce cognitive load: assets, segments, failure paths, management decisions, scenario valuations, action bands.
-- Write in clear investor prose. A good memo should be understandable after one read and useful after one month.
-- Keep memorable formulations, but never let rhetoric outrun evidence.
-- Avoid hiding behind vague labels such as "wait and see" without specifying the price or event that would change the recommendation.
+## 문체 기준
 
-## Layout Standards
+- 형용사보다 구체적인 숫자와 메커니즘을 쓴다.
+- 인지 부담을 줄일 때 표를 쓴다: 자산, 부문, 실패 경로, 경영진 의사결정, 시나리오 밸류에이션, 행동 구간.
+- 투자자가 읽는 명료한 산문으로 쓴다. 좋은 보고서는 한 번 읽어 이해되고 한 달 뒤에도 쓸모가 있다.
+- 기억에 남는 표현은 살리되, 수사가 증거를 앞지르게 하지 않는다.
+- 제안을 바꿀 가격이나 이벤트를 밝히지 않은 채 "지켜본다" 같은 막연한 표현 뒤에 숨지 않는다.
 
-For long-form research reports, prefer a calm stepped layout:
+## 레이아웃 기준
 
-- Use a simple title: `公司名（ticker）研究报告`. Avoid adding "四大师综合" or "投资备忘录" to the title unless the user asks for that framing.
-- Use dated filenames for reports: `公司名研究报告-YYYYMMDD.md`.
-- Start with one compact metadata block: research date, price, market cap, key multiples, and a one-sentence thesis.
-- Use horizontal separators between major sections.
-- Use Chinese step headings for readability, for example "第一步：核心数据总览", "第二步：生意本质分析", and "第八步：最终决策与行动清单".
-- Keep section titles short and concrete; avoid dense numbering such as "2.3.1" unless the document is technical.
-- Use quote blocks for master-style questions, not inline bold paragraphs.
-- Treat GitHub Markdown as the typography system: use heading levels, tables, quote blocks, and bold text; do not add HTML/CSS font styling unless the user explicitly asks for a non-GitHub artifact.
-- Use bold sparingly as a reading guide: metadata labels, one-sentence conclusion labels, key phrases, total/current-company rows, latest-year values, scenario target prices, action rows, and audit verdicts.
-- Keep ordinary facts in normal weight. Do not bold full tables or every important-looking number; over-emphasis makes long research feel noisy.
-- Use explicit `+` and `-` signs for growth rates and return ranges so positive/negative movement can be scanned without rereading the sentence.
-- Put checklists under "AI research bias awareness" when the company is information-rich or consensus-heavy.
-- Keep audit and tool details light at the end. Do not expose command lines unless the user asks for reproducibility commands.
-- If a prior report has a layout the user likes, preserve its reading rhythm while keeping only data that passes the current validation standard.
+장문 연구 보고서는 차분한 단계형 레이아웃을 쓴다.
 
-## Default Report Shape
+- 제목은 단순하게 쓴다: `회사명(ticker) 연구 보고서`. 사용자가 요청하지 않는 한 "4대 거장 종합"이나 "투자 메모"를 제목에 붙이지 않는다.
+- 파일명은 프로젝트 규칙을 따른다: `reports/{회사명}/{회사명}-research-{YYYYMMDD}.md`.
+- 맨 앞에 간결한 메타데이터 블록 하나를 둔다: 연구 기준일, 주가, 시가총액, 핵심 멀티플, 한 문장 논거.
+- 큰 섹션 사이에는 가로 구분선을 쓴다.
+- 읽기 쉽게 한국어 단계 제목을 쓴다. 예: "1단계: 핵심 데이터 총람", "2단계: 사업의 본질 분석", "8단계: 최종 결정과 행동 목록".
+- 섹션 제목은 짧고 구체적으로 쓴다. 기술 문서가 아니면 "2.3.1" 같은 촘촘한 번호를 피한다.
+- 거장식 질문은 본문 속 굵은 문단이 아니라 인용 블록으로 쓴다.
+- GitHub Markdown을 타이포그래피 체계로 삼는다. 제목 단계, 표, 인용 블록, 굵은 글씨를 쓰고, 사용자가 GitHub 이외의 산출물을 명시적으로 요청하지 않는 한 HTML/CSS 글꼴 스타일을 넣지 않는다.
+- 굵은 글씨는 읽기 길잡이로 아껴 쓴다: 메타데이터 라벨, 한 문장 결론 라벨, 핵심 구절, 합계/해당 회사 행, 최근 연도 값, 시나리오 목표가, 행동 행, 감사 결론.
+- 일반적인 사실은 보통 굵기로 둔다. 표 전체나 중요해 보이는 숫자를 전부 굵게 하지 않는다. 강조가 지나치면 장문 연구가 시끄러워진다.
+- 성장률과 수익률 범위에는 `+`와 `-` 부호를 명시해 문장을 다시 읽지 않고도 방향을 훑어볼 수 있게 한다.
+- 정보가 풍부하거나 컨센서스가 강한 회사라면 "AI 리서치 편향 자각" 아래에 체크리스트를 둔다.
+- 감사와 도구 관련 내용은 끝에 가볍게 둔다. 사용자가 재현용 명령을 요청하지 않는 한 명령줄을 드러내지 않는다.
+- 사용자가 좋아하는 레이아웃의 이전 보고서가 있으면 그 읽기 리듬을 유지하되, 현재 검증 기준을 통과한 데이터만 남긴다.
 
-For AI Berkshire company reports, use this order unless the user asks otherwise:
+## 기본 보고서 구성
 
-1. `AI研究偏见自觉`
-   - State the information-richness rating, consensus trap, bias checklist, and AI research limitation.
+AI Berkshire 기업 보고서는 사용자가 달리 요청하지 않는 한 다음 순서를 쓴다.
 
-2. `第一步：核心数据总览`
-   - Show segment revenue, key operating assets or units, 3-5 year financial trend, and cross-source validation.
+1. `AI 리서치 편향 자각`
+   - 정보 풍부도 등급, 컨센서스 함정, 편향 체크리스트, AI 리서치의 한계를 밝힌다.
 
-3. `第二步：生意本质分析`
-   - Define the business in one sentence, map revenue/cost/customer/asset life/growth drivers, and explain the real profit variables.
+2. `1단계: 핵심 데이터 총람`
+   - 부문별 매출, 핵심 운영 자산이나 단위, 3-5년 재무 추세, 출처 간 교차검증을 보여 준다.
 
-4. `第三步：护城河评估`
-   - Score moat sources, explain evidence, and state what can destroy or weaken the moat.
+3. `2단계: 사업의 본질 분석`
+   - 사업을 한 문장으로 정의하고, 매출/원가/고객/자산 수명/성장 동인을 정리하고, 이익을 움직이는 진짜 변수를 설명한다.
 
-5. `第四步：逆向思考与风险清单`
-   - Put the bear case in serious language. Include failure paths, probability, impact, and observable warning indicators.
+4. `3단계: 해자 평가`
+   - 해자의 원천에 평점을 매기고, 증거를 설명하고, 무엇이 해자를 무너뜨리거나 약하게 할 수 있는지 밝힌다.
 
-6. `第五步：管理层评估`
-   - Judge management through capital allocation, governance, incentives, dividends/buybacks, leverage, and whether the business is system-driven.
+5. `4단계: 역발상과 리스크 목록`
+   - 약세 논리를 진지한 언어로 쓴다. 실패 경로, 확률, 영향, 관찰 가능한 경고 지표를 넣는다.
 
-7. `第六步：行业与文明趋势`
-   - Separate broad trend from investable economics and explain where the company captures value.
+6. `5단계: 경영진 평가`
+   - 자본 배분, 지배구조, 유인 구조, 배당/자사주 매입, 레버리지, 사업이 시스템으로 움직이는지를 기준으로 경영진을 판단한다.
 
-8. `第七步：估值与安全边际`
-   - Show current valuation, reverse-DCF intuition, scenario valuation, comparable companies if useful, and explicit price bands.
+7. `6단계: 산업과 문명 흐름`
+   - 큰 흐름과 투자 가능한 경제성을 구분하고, 회사가 어디에서 가치를 가져가는지 설명한다.
 
-9. `第八步：最终决策与行动清单`
-   - Put the full decision here, not at the top: summary table, advice for empty-handed investors, advice for holders, add/sell triggers, and master-style comments if useful.
+8. `7단계: 밸류에이션과 안전마진`
+   - 현재 밸류에이션, 역산 DCF의 직관, 시나리오 밸류에이션, 필요하면 비교 기업, 명시적인 가격 구간을 보여 준다.
 
-10. `AI分析置信度 vs 投资确定性`
-    - Separate data confidence from investment certainty.
+9. `8단계: 최종 결정과 행동 목록`
+   - 완전한 결정은 맨 위가 아니라 여기에 둔다: 요약표, 미보유 투자자를 위한 제안, 보유자를 위한 제안, 추가 매수/매도 조건, 필요하면 거장식 논평.
 
-11. `数据来源与审计记录`
-    - List key sources and concise audit results. Keep command lines out of the report unless explicitly requested.
+10. `AI 분석 신뢰도 vs 투자 확실성`
+    - 데이터 신뢰도와 투자 확실성을 구분한다.
 
-## Quality Bar
+11. `데이터 출처와 감사 기록`
+    - 핵심 출처와 간결한 감사 결과를 나열한다. 명시적으로 요청받지 않는 한 명령줄은 보고서에 넣지 않는다.
 
-A strong memo should answer these questions without forcing the reader to infer:
+## 품질 기준
 
-- What exactly does this company sell, to whom, and why does money repeat?
-- What are the 2-3 variables that actually move profit?
-- Why might smart people refuse to buy?
-- What is already priced in?
-- What return is plausible under bull/base/bear cases, including dividends if relevant?
-- What should an empty-handed investor do?
-- What should a holder do?
-- What evidence would make the thesis wrong?
+좋은 보고서는 독자가 추론하지 않아도 다음 질문에 답한다.
 
-## Pairing With Other Skills
+- 이 회사는 정확히 무엇을 누구에게 팔고, 왜 돈이 반복해서 들어오는가?
+- 이익을 실제로 움직이는 변수 2-3개는 무엇인가?
+- 똑똑한 사람들은 왜 매수를 거부할 수 있는가?
+- 무엇이 이미 가격에 반영돼 있는가?
+- 강세/기본/약세 시나리오에서 기대할 수 있는 수익률은 얼마인가(필요하면 배당 포함)?
+- 미보유 투자자는 무엇을 해야 하는가?
+- 보유자는 무엇을 해야 하는가?
+- 어떤 증거가 나오면 논거가 틀린 것이 되는가?
 
-When the task requires fresh company research, first use the relevant data/research skill and its validation requirements. Then use this skill to rewrite or structure the output as a memo.
+## 다른 Skill과 함께 쓰기
 
-For AI Berkshire work, pair especially with:
+새로운 기업 연구가 필요한 작업이면 먼저 해당 데이터/연구 skill과 그 검증 요건을 따른다. 그다음 이 skill로 산출물을 보고서 형태로 다시 쓰거나 구조화한다.
 
-- `financial-data` for source hierarchy and cross-source validation.
-- `investment-research` for the Buffett/Munger/Duan/Li Lu framework.
-- `management-deep-dive` when management quality is the core uncertainty.
-- `report_audit.py` before treating a report as publishable.
+AI Berkshire 작업에서는 특히 다음과 함께 쓴다.
+
+- `financial-data`: 출처 위계와 출처 간 교차검증.
+- `investment-research`: 버핏/멍거/돤융핑/리루 프레임워크.
+- `management-deep-dive`: 경영진의 질이 핵심 불확실성일 때.
+- `report_audit.py`: 보고서를 발행 가능한 것으로 다루기 전에.

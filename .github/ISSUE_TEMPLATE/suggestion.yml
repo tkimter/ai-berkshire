@@ -1,45 +1,45 @@
-name: 💡 改进建议
-description: 对报告格式、skill 流程或框架的改进建议
-title: "[建议] "
+name: 💡 개선 제안
+description: 보고서 형식, skill 절차 또는 프레임워크에 대한 개선 제안
+title: "[제안] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        感谢建议 🙏 **请附具体、可复现的例子**：在哪份报告/哪张表看到的问题，以及期望改成什么样。
-        只有抽象描述（如"读起来不方便"）而没有具体出处的建议很难落地，会被要求补充。
+        제안에 감사한다 🙏 **구체적이고 재현 가능한 예를 붙인다**: 어느 보고서/어느 표에서 본 문제인지, 어떻게 바뀌길 기대하는지.
+        구체적인 위치 없이 추상적인 설명("읽기 불편하다" 등)만 있는 제안은 반영하기 어려워 보완을 요청한다.
   - type: textarea
     id: problem
     attributes:
-      label: 你观察到的问题 + 具体出处（必填）
-      description: 在哪份报告、哪一段或哪张表看到的？请贴链接或截图，最好把有问题的原文片段贴出来。
+      label: 관찰한 문제 + 구체적인 위치 (필수)
+      description: 어느 보고서의 어느 단락이나 어느 표에서 보았는가? 링크나 스크린샷을 붙이고, 가능하면 문제가 있는 원문 부분을 붙여 넣는다.
       placeholder: |
-        reports/全球AI赛道10家核心标的筛选-20260628.md 的市值对比表，
-        同一列里 NVIDIA 用美元、SK海力士用韩元，没法横向比大小。
+        reports/ 아래 글로벌 AI 핵심 종목 선별 보고서의 시가총액 비교표.
+        같은 열에서 NVIDIA는 달러, SK하이닉스는 원화를 써서 크기를 가로로 비교할 수 없다.
     validations:
       required: true
   - type: textarea
     id: expectation
     attributes:
-      label: 期望的改进效果（必填）
-      description: 最好给"当前长这样 → 期望长这样"的对比，越具体越容易被采纳。
+      label: 기대하는 개선 효과 (필수)
+      description: 가능하면 "지금은 이렇다 → 이렇게 되길 바란다"의 대비를 제시한다. 구체적일수록 채택되기 쉽다.
       placeholder: |
-        当前：市值列混用美元/韩元
-        期望：跨市场对比表里，绝对量级的列统一换算成美元并注明汇率
+        현재: 시가총액 열에 달러/원화가 섞여 있다
+        기대: 시장 간 비교표에서 절대 규모 열은 달러로 통일 환산하고 환율을 표시한다
     validations:
       required: true
   - type: textarea
     id: extra
     attributes:
-      label: 补充说明（选填）
+      label: 추가 설명 (선택)
     validations:
       required: false
   - type: checkboxes
     id: confirm
     attributes:
-      label: 确认
+      label: 확인
       options:
-        - label: 我已搜索过现有 issue，确认没有重复
+        - label: 기존 issue를 검색했고 중복이 없음을 확인했다
           required: true
-        - label: 我已提供具体出处和期望效果，而非仅抽象描述
+        - label: 추상적인 설명만이 아니라 구체적인 위치와 기대 효과를 제공했다
           required: true

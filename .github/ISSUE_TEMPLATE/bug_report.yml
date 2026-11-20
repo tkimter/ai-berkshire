@@ -1,25 +1,28 @@
-name: 🐞 Skill 报错 / 无法运行
-description: 某个 skill 执行报错、卡住，或工具/参数缺失导致跑不起来
+name: 🐞 Skill 오류 / 실행 불가
+description: 어떤 skill이 실행 중 오류를 내거나 멈추거나, 도구/인자가 없어 돌아가지 않는다
 title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        感谢反馈 🙏 **请务必给出可复现的具体信息**——没有复现信息的报错无法定位，会被要求补充或直接关闭。
-        提交前请先搜索是否已有相同 issue。
+        제보에 감사한다 🙏 **재현 가능한 구체적인 정보를 반드시 적는다.** 재현 정보가 없는 오류는 원인을 찾을 수 없어 보완을 요청하거나 바로 닫는다.
+        올리기 전에 같은 issue가 이미 있는지 먼저 검색한다.
   - type: dropdown
     id: skill
     attributes:
-      label: 涉及的 Skill
-      description: 报错发生在哪个 skill？只选一个，且确保标题与正文描述的是同一个（曾出现标题写 investment-research、正文写 investment-team 的情况）。
+      label: 관련 Skill
+      description: 오류가 어느 skill에서 났는가? 하나만 고르고, 제목과 본문이 같은 skill을 가리키는지 확인한다(제목은 investment-research, 본문은 investment-team으로 적은 사례가 있었다).
       options:
+        - article-writing
         - bottleneck-hunter
         - deep-company-series
         - dyp-ask
         - earnings-review
         - earnings-team
+        - era-alpha
         - financial-data
+        - income-investment
         - industry-funnel
         - industry-research
         - investment-checklist
@@ -32,57 +35,57 @@ body:
         - quality-screen
         - thesis-drift
         - thesis-tracker
-        - wechat-article
-        - 不确定
-        - 其他 / 涉及多个
+        - investment-memo-craft (Codex 전용)
+        - 잘 모르겠음
+        - 기타 / 여러 개 관련
     validations:
       required: true
   - type: input
     id: command
     attributes:
-      label: 你运行的完整命令
-      description: 一字不差地贴出你实际输入的命令。
-      placeholder: "/investment-team 美团"
+      label: 실행한 전체 명령
+      description: 실제로 입력한 명령을 한 글자도 빼지 않고 붙여 넣는다.
+      placeholder: "/investment-team 엔비디아"
     validations:
       required: true
   - type: textarea
     id: expected-actual
     attributes:
-      label: 期望结果 vs 实际结果
-      description: 你期望发生什么？实际发生了什么？请**完整贴出报错信息/日志**，不要只描述。
+      label: 기대한 결과 vs 실제 결과
+      description: 무엇이 일어나길 기대했고 실제로 무엇이 일어났는가? 설명만 하지 말고 **오류 메시지/로그 전체를 붙여 넣는다**.
       placeholder: |
-        期望：正常生成四大师并行分析报告
-        实际：报错 "TeamCreate is not a valid tool"，流程中断
+        기대: 4대 거장 병렬 분석 보고서가 정상적으로 생성된다
+        실제: "TeamCreate is not a valid tool" 오류가 나고 절차가 중단된다
     validations:
       required: true
   - type: textarea
     id: repro
     attributes:
-      label: 复现步骤
-      description: 从头到尾怎么操作能重现？（安装方式、运行环境、具体操作顺序）
+      label: 재현 절차
+      description: 처음부터 끝까지 어떻게 하면 재현되는가? (설치 방식, 실행 환경, 구체적인 조작 순서)
     validations:
       required: true
   - type: input
     id: model
     attributes:
-      label: 使用的模型
-      description: 不同模型表现可能不同，这一项对定位至关重要。
-      placeholder: "Opus 4.8 / Sonnet / 其他"
+      label: 사용한 모델
+      description: 모델마다 동작이 다를 수 있다. 원인을 찾는 데 매우 중요한 항목이다.
+      placeholder: "Opus 4.8 / Sonnet / 기타"
     validations:
       required: true
   - type: input
     id: client
     attributes:
-      label: 客户端及版本
-      placeholder: "Claude Code CLI (版本号) / Codex / IDE 插件"
+      label: 클라이언트와 버전
+      placeholder: "Claude Code CLI (버전 번호) / Codex / IDE 플러그인"
     validations:
       required: true
   - type: checkboxes
     id: confirm
     attributes:
-      label: 确认
+      label: 확인
       options:
-        - label: 我已搜索过现有 issue，确认没有重复
+        - label: 기존 issue를 검색했고 중복이 없음을 확인했다
           required: true
-        - label: 我已提供可复现的完整信息（命令、报错、模型、客户端）
+        - label: 재현 가능한 전체 정보(명령, 오류, 모델, 클라이언트)를 제공했다
           required: true

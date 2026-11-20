@@ -1,335 +1,335 @@
-# Almonty Industries (TSX:AII / NASDAQ:ALM) 深度投资研究
+# Almonty Industries (TSX:AII / NASDAQ:ALM) 심층 투자 연구
 
-**日期：2026年6月4日**
-**最新股价：US$19.96（NASDAQ:ALM，6月3日收盘）/ C$28.56（TSX:AII，6月2日收盘）**
-**市值：约US$56.9亿**
-**52周区间：US$3.16 - $24.41**
+**일자: 2026년 6월 4일**
+**최신 주가: US$19.96(NASDAQ:ALM, 6월 3일 종가) / C$28.56(TSX:AII, 6월 2일 종가)**
+**시가총액: 약 US$56.9억**
+**52주 구간: US$3.16 - $24.41**
 
 ---
 
-## 一、公司概况：全球非中国钨矿领军者
+## 1. 회사 개요: 글로벌 비중국 텅스텐 광산의 선두 주자
 
-Almonty Industries 成立于2011年，是全球最大的非中国钨精矿生产商。公司运营三座矿山，并在美国布局第四个项目：
+Almonty Industries는 2011년에 설립된 세계 최대의 비중국 텅스텐 정광 생산업체다. 회사는 광산 3곳을 운영하며 미국에 네 번째 프로젝트를 배치하고 있다.
 
-| 矿山 | 位置 | 状态 | 产能/特点 |
+| 광산 | 위치 | 상태 | 생산능력/특징 |
 |------|------|------|----------|
-| **Sangdong（相东）** | 韩国 | Phase 1已投产（2026.3.17） | 64万吨矿石/年 → 2,300吨钨精矿/年 |
-| **Panasqueira** | 葡萄牙 | 稳定生产130年 | 70-75万吨/年，当前主要收入来源 |
-| **Los Santos** | 西班牙 | 维护保养中 | 计划2026年恢复运营 |
-| **Gentung Browns Lake** | 蒙大拿，美国 | 开发阶段 | 预计2026年下半年投产，14万吨单位/年 |
+| **Sangdong(상동)** | 한국 | Phase 1 가동 개시(2026.3.17) | 광석 64만 톤/년 → 텅스텐 정광 2,300톤/년 |
+| **Panasqueira** | 포르투갈 | 130년간 안정 생산 | 70-75만 톤/년, 현재 주된 매출원 |
+| **Los Santos** | 스페인 | 유지 보수 중 | 2026년 운영 재개 계획 |
+| **Gentung Browns Lake** | 몬태나, 미국 | 개발 단계 | 2026년 하반기 가동 예상, 14만 톤 단위/년 |
 
-**总部**已从加拿大迁至美国蒙大拿州Dillon，战略性靠近Gentung项目和五角大楼采购链。
+**본사**는 캐나다에서 미국 몬태나주 Dillon으로 이전했으며, Gentung 프로젝트와 펜타곤 조달 체인에 전략적으로 가깝다.
 
-**CEO Lewis Black**于2011年创立公司，2025年3月连续两次在公开市场买入50,000股，以实际行动表达对公司前景的信心。
+**CEO Lewis Black**은 2011년에 회사를 창업했고, 2025년 3월 두 차례 연속으로 공개 시장에서 50,000주를 매수해 회사 전망에 대한 신뢰를 행동으로 보였다.
 
-**数据来源：** [Almonty官网](https://almonty.com/project/)、[Mining Weekly](https://www.miningweekly.com/article/almonty-enters-us-with-acquisition-of-montana-tungsten-project-2025-11-17)、[BusinessWire](https://www.businesswire.com/news/home/20260316607350/en/)
+**데이터 출처:** [Almonty 공식 사이트](https://almonty.com/project/), [Mining Weekly](https://www.miningweekly.com/article/almonty-enters-us-with-acquisition-of-montana-tungsten-project-2025-11-17), [BusinessWire](https://www.businesswire.com/news/home/20260316607350/en/)
 
 ---
 
-## 二、核心逻辑：钨的瓶颈地位
+## 2. 핵심 논리: 텅스텐의 병목 지위
 
-### 2.1 钨是什么？为什么重要？
+### 2.1 텅스텐은 무엇인가? 왜 중요한가?
 
-钨（Tungsten, W）是地球上熔点最高的金属（3,422°C），广泛用于：
+텅스텐(Tungsten, W)은 지구상에서 녹는점이 가장 높은 금속(3,422°C)이며 다음에 널리 쓰인다.
 
-- **半导体制造**：钨六氟化物（WF6）是芯片制程中不可替代的沉积气体
-- **国防军工**：穿甲弹、导弹、无人机关键材料
-- **硬质合金**：切削工具、采矿钻头
-- **航空航天**：高温合金部件
+- **반도체 제조**: 육불화텅스텐(WF6)은 칩 공정에서 대체할 수 없는 증착 가스
+- **국방·군수**: 철갑탄, 미사일, 드론의 핵심 소재
+- **초경합금**: 절삭 공구, 채광용 드릴 비트
+- **항공우주**: 고온 합금 부품
 
-### 2.2 WF6——S级瓶颈
+### 2.2 WF6: S급 병목
 
-WF6是半导体制造中的关键前驱体，用于钨化学气相沉积（CVD）。日本WF6生产商（占全球约25%供应）已通知三星和SK海力士，其WF6库存可能在2026年6月耗尽。这一瓶颈直接威胁全球存储芯片生产。
+WF6는 반도체 제조의 핵심 전구체로 텅스텐 화학기상증착(CVD)에 쓰인다. 일본의 WF6 생산업체(전 세계 공급의 약 25%)는 삼성과 SK하이닉스에 자사 WF6 재고가 2026년 6월에 소진될 수 있다고 통보했다. 이 병목은 전 세계 메모리 칩 생산을 직접 위협한다.
 
-### 2.3 中国垄断与地缘风险
+### 2.3 중국의 독점과 지정학적 리스크
 
-- **中国控制全球80%以上的钨粉生产和精炼**
-- 2026年1月，中国《两用物项出口管制清单》进一步收紧钨出口管制
-- **仅15家公司获授权出口钨**，北京直接控制出口量、时间和目的地
-- **2027年1月起，美国国防承包商必须从非中国来源采购钨**（DFARS法规）
+- **중국은 전 세계 텅스텐 분말 생산과 정련의 80% 이상을 장악**
+- 2026년 1월, 중국의 《이중용도 품목 수출통제 목록》이 텅스텐 수출 통제를 한층 강화
+- **15개 회사만 텅스텐 수출 허가를 받았으며**, 베이징이 수출량·시기·목적지를 직접 통제
+- **2027년 1월부터 미국 방산 계약업체는 비중국 공급원에서 텅스텐을 조달해야 함**(DFARS 규정)
 
-### 2.4 APT价格暴涨
+### 2.4 APT 가격 폭등
 
-鹿特丹APT（钨酸铵）现货价格走势：
+로테르담 APT(파라텅스텐산암모늄) 현물 가격 추이:
 
-| 时间节点 | APT价格（US$/MTU） | 变化 |
+| 시점 | APT 가격(US$/MTU) | 변화 |
 |---------|-------------------|------|
-| 2025年初 | ~$460 | 基准 |
-| 2026年1月 | ~$920 | +100% |
-| 2026年4月 | ~$3,185 | +591% |
-| 2026年5月29日 | ~$3,040 | +557%（较年初） |
+| 2025년 초 | ~$460 | 기준 |
+| 2026년 1월 | ~$920 | +100% |
+| 2026년 4월 | ~$3,185 | +591% |
+| 2026년 5월 29일 | ~$3,040 | +557%(연초 대비) |
 
-**结构性驱动因素：** 中国出口配额收紧 + 全球军费攀升 + 美国战略储备采购 + WF6半导体需求扩张。分析师认为价格可能测试$30,000/MTU（精矿），因为供应缺口已成结构性问题。
+**구조적 동인:** 중국 수출 쿼터 축소 + 전 세계 군비 증가 + 미국 전략 비축 구매 + WF6 반도체 수요 확대. 애널리스트는 공급 부족이 이미 구조적 문제가 되었기 때문에 가격이 $30,000/MTU(정광)를 시험할 수 있다고 본다.
 
-**数据来源：** [GOLDINVEST](https://goldinvest.de/en/tungsten-prices-explode-in-2026-supercycle-driven-by-china-quotas)、[TungstenPrices.com](https://tungstenprices.com/)、[MarketScreener](https://www.marketscreener.com/news/almonty-industries-brief-added-tungsten-pricing-seeing-strong-growth-with-ttm-average-apt-price-ce7e5eded88ef320)
+**데이터 출처:** [GOLDINVEST](https://goldinvest.de/en/tungsten-prices-explode-in-2026-supercycle-driven-by-china-quotas), [TungstenPrices.com](https://tungstenprices.com/), [MarketScreener](https://www.marketscreener.com/news/almonty-industries-brief-added-tungsten-pricing-seeing-strong-growth-with-ttm-average-apt-price-ce7e5eded88ef320)
 
 ---
 
-## 三、财务分析
+## 3. 재무 분석
 
-### 3.1 Q1 FY2026业绩（截至2026年3月31日）
+### 3.1 Q1 FY2026 실적(2026년 3월 31일 기준)
 
-| 指标 | Q1 2026 | Q1 2025 | 同比变化 |
+| 지표 | Q1 2026 | Q1 2025 | 전년 동기 대비 변화 |
 |------|---------|---------|---------|
-| 营收 | $25.4M | $7.9M | **+221%** |
-| 调整后EBITDA | +$6.1M | -$2.4M | **首次转正** |
-| 经营现金流 | +$9.7M | -$4.4M | **显著改善** |
-| 净亏损 | -$5.3M | — | 含$8.4M非现金衍生品重估 |
-| 期末现金 | $259.9M | — | 充裕 |
+| 매출 | $25.4M | $7.9M | **+221%** |
+| 조정 EBITDA | +$6.1M | -$2.4M | **첫 흑자 전환** |
+| 영업현금흐름 | +$9.7M | -$4.4M | **뚜렷한 개선** |
+| 순손실 | -$5.3M | — | $8.4M 비현금 파생상품 재평가 포함 |
+| 기말 현금 | $259.9M | — | 충분 |
 
-**关键说明：** Q1营收$25.4M几乎全部来自Panasqueira矿，受益于APT价格暴涨。Sangdong矿3月17日才正式投产，尚未贡献实质性收入。净亏损主要因股价上涨导致的衍生品和权证负债非现金重估（$8.4M）。
+**핵심 설명:** Q1 매출 $25.4M은 거의 전부 Panasqueira 광산에서 나왔으며 APT 가격 폭등의 수혜를 입었다. Sangdong 광산은 3월 17일에야 정식 가동되어 아직 실질적인 매출에 기여하지 못했다. 순손실은 주로 주가 상승에 따른 파생상품 및 워런트 부채의 비현금 재평가($8.4M) 때문이다.
 
-### 3.2 历史财务数据（年度，加元）
+### 3.2 과거 재무 데이터(연간, 캐나다달러)
 
-| 指标 | TTM(至3/26) | FY2025 | FY2024 | FY2023 |
+| 지표 | TTM(3/26까지) | FY2025 | FY2024 | FY2023 |
 |------|-----------|--------|--------|--------|
-| 营收 | C$50.0M | C$32.5M | C$28.8M | C$22.5M |
-| 毛利 | C$14.6M | C$2.4M | C$2.0M | C$1.1M |
+| 매출 | C$50.0M | C$32.5M | C$28.8M | C$22.5M |
+| 매출총이익 | C$14.6M | C$2.4M | C$2.0M | C$1.1M |
 | EBITDA | -C$11.7M | -C$35.2M | -C$12.2M | -C$4.8M |
-| 净利润 | -C$132.6M | -C$161.9M | -C$16.3M | -C$8.8M |
-| 自由现金流 | -C$79.9M | -C$80.0M | -C$43.7M | -C$29.2M |
+| 순이익 | -C$132.6M | -C$161.9M | -C$16.3M | -C$8.8M |
+| 잉여현금흐름 | -C$79.9M | -C$80.0M | -C$43.7M | -C$29.2M |
 
-**财务现实：** 公司历史上从未盈利。FY2025巨额亏损（C$161.9M）主要源于非现金项目和Sangdong建设期间的资本支出。但Q1 2026的调整后EBITDA首次转正，标志着运营拐点。
+**재무 현실:** 회사는 역사상 흑자를 낸 적이 없다. FY2025의 거액 손실(C$161.9M)은 주로 비현금 항목과 Sangdong 건설 기간의 자본 지출에서 비롯되었다. 다만 Q1 2026의 조정 EBITDA가 처음으로 흑자 전환해 운영의 변곡점을 알렸다.
 
-### 3.3 股本结构
+### 3.3 자본 구조
 
-- 流通股：283,741,849股（含CDI）
-- 权证：411,407份（行权价$1.71，2028年到期）
-- 期权：6,741,314份（加权平均行权价$2.00）
-- 2025年完成两次美国上市融资，合计募集US$2.19亿
-- 潜在稀释有限（权证+期权占比约2.5%）
+- 유통 주식: 283,741,849주(CDI 포함)
+- 워런트: 411,407개(행사가 $1.71, 2028년 만기)
+- 옵션: 6,741,314개(가중평균 행사가 $2.00)
+- 2025년 두 차례 미국 상장 자금 조달을 완료해 합계 US$2.19억 조달
+- 잠재 희석은 제한적(워런트 + 옵션 비중 약 2.5%)
 
-**数据来源：** [StockAnalysis](https://stockanalysis.com/stocks/alm/financials/)、[TipRanks](https://www.tipranks.com/news/company-announcements/almonty-industries-q1-revenue-surges-221-as-sangdong-mine-reaches-commissioning)、[SEC 6-K文件](https://www.sec.gov/Archives/edgar/data/0001670061/000149315226022338/ex99-1.htm)
+**데이터 출처:** [StockAnalysis](https://stockanalysis.com/stocks/alm/financials/), [TipRanks](https://www.tipranks.com/news/company-announcements/almonty-industries-q1-revenue-surges-221-as-sangdong-mine-reaches-commissioning), [SEC 6-K 문서](https://www.sec.gov/Archives/edgar/data/0001670061/000149315226022338/ex99-1.htm)
 
 ---
 
-## 四、增长引擎：SeAH钼矿合约
+## 4. 성장 엔진: SeAH 몰리브덴 광산 계약
 
-### 独家包销协议核心条款
+### 독점 오프테이크 계약의 핵심 조항
 
-| 条款 | 内容 |
+| 조항 | 내용 |
 |------|------|
-| 买方 | SeAH M&S（韩国最大钼加工商，全球第二大钼氧化物冶炼商，SpaceX承包商） |
-| 标的 | Sangdong钼矿全部产出，矿山全生命周期独家包销 |
-| 矿山寿命 | 60年（基于韩国政府历史数据） |
-| 年产量 | 约5,600吨钼 |
-| 保底价 | US$19.00/磅（扣除处理费前） |
-| 最低年收入保障 | **~US$2.34亿** |
-| 预计投产 | **2026年底** |
+| 매수자 | SeAH M&S(한국 최대 몰리브덴 가공업체, 세계 2위 산화몰리브덴 제련업체, SpaceX 계약업체) |
+| 대상 | Sangdong 몰리브덴 광산의 전체 산출물, 광산 전 수명 주기 독점 오프테이크 |
+| 광산 수명 | 60년(한국 정부의 과거 데이터 기준) |
+| 연간 생산량 | 몰리브덴 약 5,600톤 |
+| 하한가 | US$19.00/파운드(처리비 차감 전) |
+| 최소 연간 매출 보장 | **~US$2.34억** |
+| 가동 예상 | **2026년 말** |
 
-### 这意味着什么？
+### 이것은 무엇을 뜻하는가?
 
-这是一份改变公司命运的合约。仅钼矿一项，就可以：
-- 提供US$2.34亿年收入底线（vs当前年化收入约US$1亿）
-- 消除钼价格下行风险（底价保障）
-- 60年合约期提供极长的收入可见性
-- SeAH作为SpaceX供应商，间接绑定航天需求
+이것은 회사의 운명을 바꾸는 계약이다. 몰리브덴 광산 하나만으로 다음이 가능하다.
+- US$2.34억의 연간 매출 하한 제공(vs 현재 연환산 매출 약 US$1억)
+- 몰리브덴 가격 하락 리스크 제거(하한가 보장)
+- 60년 계약 기간이 매우 긴 매출 가시성을 제공
+- SeAH는 SpaceX 공급업체로서 항공우주 수요에 간접적으로 묶여 있음
 
-**数据来源：** [BusinessWire](https://www.businesswire.com/news/home/20250129315431/en/)、[Mining.com](https://www.mining.com/almonty-enters-molybdenum-offtake-deal-with-spacex-contractor-seah/)
+**데이터 출처:** [BusinessWire](https://www.businesswire.com/news/home/20250129315431/en/), [Mining.com](https://www.mining.com/almonty-enters-molybdenum-offtake-deal-with-spacex-contractor-seah/)
 
 ---
 
-## 五、估值分析
+## 5. 밸류에이션 분석
 
-### 5.1 当前估值
+### 5.1 현재 밸류에이션
 
-| 指标 | 数值 | 说明 |
+| 지표 | 수치 | 설명 |
 |------|------|------|
-| 市值 | US$56.9亿 | |
-| TTM营收 | ~US$35.8M | |
-| **Trailing P/S** | **~159x** | 极端高估 |
-| TTM净利润 | -US$95.0M | 尚未盈利 |
-| P/E | N/A | 亏损状态 |
-| Forward P/E | 33.81x | 基于分析师预测 |
-| 现金 | US$259.9M | 充裕 |
+| 시가총액 | US$56.9억 | |
+| TTM 매출 | ~US$35.8M | |
+| **Trailing P/S** | **~159x** | 극단적 고평가 |
+| TTM 순이익 | -US$95.0M | 아직 흑자 아님 |
+| P/E | N/A | 적자 상태 |
+| Forward P/E | 33.81x | 애널리스트 전망 기준 |
+| 현금 | US$259.9M | 충분 |
 
-### 5.2 前瞻估值（含钼矿收入，2027年全产能）
+### 5.2 선행 밸류에이션(몰리브덴 광산 매출 포함, 2027년 완전 가동)
 
-假设2027年全产能运转：
-- Sangdong钨矿收入：估计US$1.5-2.0亿/年（取决于APT价格）
-- 钼矿收入：US$2.34亿/年（底价保障）
-- Panasqueira收入：US$1.0-1.2亿/年（当前APT价格下）
-- **合计前瞻收入：约US$5.0-5.5亿/年**
-- **前瞻P/S：约10-11x**
+2027년 완전 가동을 가정하면:
+- Sangdong 텅스텐 광산 매출: US$1.5-2.0억/년 추정(APT 가격에 좌우)
+- 몰리브덴 광산 매출: US$2.34억/년(하한가 보장)
+- Panasqueira 매출: US$1.0-1.2억/년(현재 APT 가격 기준)
+- **합계 선행 매출: 약 US$5.0-5.5억/년**
+- **선행 P/S: 약 10-11x**
 
-### 5.3 分析师评级
+### 5.3 애널리스트 등급
 
-| 机构 | 评级 | 目标价 | 日期 |
+| 기관 | 등급 | 목표주가 | 일자 |
 |------|------|--------|------|
-| Oppenheimer | Outperform | US$25.00 | 2026年6月 |
-| D.A. Davidson | Buy | US$25.00 | 2026年5月 |
-| 共识（9位分析师） | **Strong Buy** | US$23.88 | — |
-| 最高目标价 | — | C$36.00 | — |
-| 最低目标价 | — | C$7.50 | — |
+| Oppenheimer | Outperform | US$25.00 | 2026년 6월 |
+| D.A. Davidson | Buy | US$25.00 | 2026년 5월 |
+| 컨센서스(애널리스트 9명) | **Strong Buy** | US$23.88 | — |
+| 최고 목표주가 | — | C$36.00 | — |
+| 최저 목표주가 | — | C$7.50 | — |
 
-**估值矛盾：** 以当前营收衡量，Almonty极度昂贵（P/S 159x）。但市场定价的是12-18个月后的收入爆发——Sangdong钨矿满产 + 钼矿投产 + APT高价持续。目标价分歧巨大（C$7.50 vs C$36.00），反映出对执行能力和矿产价格的根本分歧。
+**밸류에이션의 모순:** 현재 매출로 재면 Almonty는 극도로 비싸다(P/S 159x). 그러나 시장이 가격에 반영하는 것은 12-18개월 뒤의 매출 폭발이다. Sangdong 텅스텐 광산 풀가동 + 몰리브덴 광산 가동 + APT 고가 지속. 목표주가의 격차가 크다는 점(C$7.50 vs C$36.00)은 실행 능력과 광물 가격에 대한 근본적 이견을 반영한다.
 
-**数据来源：** [StockAnalysis](https://stockanalysis.com/stocks/alm/)、[Investing.com](https://www.investing.com/news/analyst-ratings/oppenheimer-raises-almonty-industries-stock-price-target-to-25-on-tungsten-prices-93CH-4723984)、[Public.com](https://public.com/stocks/alm/forecast-price-target)
-
----
-
-## 六、四重催化剂（2026年6月）
-
-Almonty面临罕见的催化剂密集期，四个重大事件在一个月内集中发生：
-
-### 催化剂1：Phase 2股东投票（6月8-9日） ★★★★★
-
-- **内容：** Sangdong矿二期扩产表决，若通过，矿石处理能力从64万吨/年翻倍至**120万吨/年**，钨精矿产出从2,300吨翻倍至~4,600吨/年
-- **时间线：** 代理投票截止6月5日上午10:00（东部时间），AGM定于6月9日
-- **意义：** Phase 2将在2027年上线，届时恰好赶上五角大楼非中国钨采购禁令生效
-- **管理层立场：** 董事会一致建议投票赞成，CEO已公开呼吁股东投票支持
-- **风险：** 若不通过，短期股价承压，但Phase 1仍然运营
-
-### 催化剂2：Russell 1000指数纳入（6月29日生效） ★★★★
-
-- **内容：** FTSE Russell于5月22日公布初步名单，Almonty将纳入大盘Russell 1000和Russell 3000指数
-- **意义：** 约US$12.2万亿资产基准对标Russell美国指数，被动资金将被动买入ALM
-- **影响：** 扩大机构投资者可见度，增加流动性，降低波动性
-
-### 催化剂3：五角大楼钨采购禁令（2027年1月生效） ★★★★
-
-- 美国国防承包商必须从非中国来源采购钨
-- Almonty已与Tungsten Parts Wyoming签订每月至少40吨氧化钨的约束性供应协议
-- Sangdong + Gentung = 美国本土+盟国的完整供应链
-
-### 催化剂4：钼矿投产（2026年底） ★★★★★
-
-- SeAH包销合约生效，US$2.34亿年收入底线开始兑现
-- 从"故事"变为"现金流"的关键转折点
-
-**数据来源：** [StockTitan](https://www.stocktitan.net/news/ALM/almonty-industries-set-to-join-large-cap-russell-1000-index-and-5f1dfb6ltbjw.html)、[Morningstar](https://www.morningstar.com/news/business-wire/20260528919556/almonty-industries-set-to-join-large-cap-russell-1000-index-and-broad-market-russell-3000-index)、[Investing.com](https://www.investing.com/news/company-news/almonty-industries-set-to-join-russell-1000-and-3000-indexes-93CH-4714139)
+**데이터 출처:** [StockAnalysis](https://stockanalysis.com/stocks/alm/), [Investing.com](https://www.investing.com/news/analyst-ratings/oppenheimer-raises-almonty-industries-stock-price-target-to-25-on-tungsten-prices-93CH-4723984), [Public.com](https://public.com/stocks/alm/forecast-price-target)
 
 ---
 
-## 七、风险分析
+## 6. 4중 촉매(2026년 6월)
 
-### 高风险项
+Almonty는 보기 드문 촉매 밀집기를 맞고 있으며, 중대 이벤트 4건이 한 달 안에 집중된다.
 
-| 风险 | 严重程度 | 说明 |
+### 촉매 1: Phase 2 주주 투표(6월 8-9일) ★★★★★
+
+- **내용:** Sangdong 광산 2기 증설 표결. 통과되면 광석 처리능력이 64만 톤/년에서 **120만 톤/년**으로 2배가 되고, 텅스텐 정광 산출이 2,300톤에서 ~4,600톤/년으로 2배가 됨
+- **일정:** 위임 투표 마감은 6월 5일 오전 10:00(동부 시간), AGM은 6월 9일 예정
+- **의미:** Phase 2는 2027년에 가동되며, 그 시점은 펜타곤의 비중국 텅스텐 조달 금지 조치 발효와 정확히 맞물림
+- **경영진 입장:** 이사회는 만장일치로 찬성 투표를 권고했고, CEO는 주주에게 찬성 투표를 공개적으로 호소
+- **리스크:** 통과되지 않으면 단기 주가가 압박을 받으나 Phase 1은 계속 운영
+
+### 촉매 2: Russell 1000 지수 편입(6월 29일 발효) ★★★★
+
+- **내용:** FTSE Russell이 5월 22일 예비 명단을 발표했으며, Almonty는 대형주 Russell 1000과 Russell 3000 지수에 편입될 예정
+- **의미:** 약 US$12.2조의 자산이 Russell 미국 지수를 벤치마크로 삼고 있어 패시브 자금이 ALM을 기계적으로 매수하게 됨
+- **영향:** 기관 투자자 가시성 확대, 유동성 증가, 변동성 저하
+
+### 촉매 3: 펜타곤 텅스텐 조달 금지 조치(2027년 1월 발효) ★★★★
+
+- 미국 방산 계약업체는 비중국 공급원에서 텅스텐을 조달해야 함
+- Almonty는 Tungsten Parts Wyoming과 월 최소 40톤의 산화텅스텐에 대한 구속력 있는 공급 계약을 체결
+- Sangdong + Gentung = 미국 본토 + 동맹국의 완결된 공급망
+
+### 촉매 4: 몰리브덴 광산 가동(2026년 말) ★★★★★
+
+- SeAH 오프테이크 계약이 발효되어 US$2.34억의 연간 매출 하한이 실현되기 시작
+- "스토리"에서 "현금흐름"으로 바뀌는 핵심 전환점
+
+**데이터 출처:** [StockTitan](https://www.stocktitan.net/news/ALM/almonty-industries-set-to-join-large-cap-russell-1000-index-and-5f1dfb6ltbjw.html), [Morningstar](https://www.morningstar.com/news/business-wire/20260528919556/almonty-industries-set-to-join-large-cap-russell-1000-index-and-broad-market-russell-3000-index), [Investing.com](https://www.investing.com/news/company-news/almonty-industries-set-to-join-russell-1000-and-3000-indexes-93CH-4714139)
+
+---
+
+## 7. 리스크 분석
+
+### 고위험 항목
+
+| 리스크 | 심각도 | 설명 |
 |------|---------|------|
-| **估值极端高企** | ★★★★★ | Trailing P/S 159x，任何执行失误都可能导致股价大幅回撤。当前价格已充分反映甚至透支了乐观预期 |
-| **Phase 2投票不通过** | ★★★★ | 若股东否决二期扩产，将延迟产能翻倍计划，打击市场信心 |
-| **钼矿投产延迟** | ★★★★ | 钼矿原计划2026年底投产，矿业项目延期是常态，若推迟将推迟US$2.34亿/年收入兑现 |
-| **APT价格回落** | ★★★ | 当前APT价格处于历史极高位（~$3,040/MTU），若中国放松出口管制或需求放缓，价格可能大幅回调 |
+| **극단적으로 높은 밸류에이션** | ★★★★★ | Trailing P/S 159x. 어떤 실행 실수도 주가의 큰 폭 하락을 부를 수 있다. 현재 가격은 낙관적 기대를 충분히 반영했거나 선반영을 넘어섰다 |
+| **Phase 2 투표 부결** | ★★★★ | 주주가 2기 증설을 부결하면 생산능력 2배 계획이 지연되고 시장 신뢰가 타격을 받는다 |
+| **몰리브덴 광산 가동 지연** | ★★★★ | 몰리브덴 광산은 당초 2026년 말 가동 계획이다. 광업 프로젝트의 지연은 일상적이며, 미뤄지면 US$2.34억/년 매출의 실현도 미뤄진다 |
+| **APT 가격 하락** | ★★★ | 현재 APT 가격은 역사적 초고점(~$3,040/MTU)이다. 중국이 수출 통제를 완화하거나 수요가 둔화하면 가격이 크게 조정될 수 있다 |
 
-### 中等风险项
+### 중위험 항목
 
-| 风险 | 严重程度 | 说明 |
+| 리스크 | 심각도 | 설명 |
 |------|---------|------|
-| **Sangdong产能爬坡不及预期** | ★★★ | Phase 1刚投产3个月，尚未证明能稳定达到设计产能 |
-| **地缘政治风险** | ★★★ | 韩国矿山面临朝鲜半岛风险；中国可能对钨市场采取报复性措施 |
-| **融资稀释** | ★★ | 2025年两次融资已稀释，但当前权证/期权占比仅约2.5%，稀释风险可控 |
-| **管理层执行能力** | ★★★ | 同时推进韩国、美国、葡萄牙三地项目，管理复杂度高。新CFO Jorge Beristain（6月1日上任）尚待观察 |
-| **Beta极高（2.03）** | ★★★ | 股价波动剧烈，不适合风险承受能力低的投资者 |
+| **Sangdong 생산능력 램프업이 기대 미달** | ★★★ | Phase 1은 가동된 지 3개월에 불과하며 설계 생산능력에 안정적으로 도달할 수 있음을 아직 증명하지 못했다 |
+| **지정학적 리스크** | ★★★ | 한국 광산은 한반도 리스크에 노출되어 있다. 중국이 텅스텐 시장에 보복 조치를 취할 수 있다 |
+| **자금 조달에 따른 희석** | ★★ | 2025년 두 차례 자금 조달로 이미 희석되었으나 현재 워런트/옵션 비중은 약 2.5%에 불과해 희석 리스크는 통제 가능하다 |
+| **경영진 실행 능력** | ★★★ | 한국, 미국, 포르투갈 세 곳의 프로젝트를 동시에 추진해 관리 복잡도가 높다. 신임 CFO Jorge Beristain(6월 1일 취임)은 아직 지켜봐야 한다 |
+| **매우 높은 Beta(2.03)** | ★★★ | 주가 변동이 극심해 위험 감내 능력이 낮은 투자자에게 맞지 않는다 |
 
-### 历史亏损不容忽视
+### 과거의 적자를 간과할 수 없다
 
-公司从未实现年度盈利。FY2025净亏损C$161.9M，TTM净亏损C$132.6M，累计自由现金流持续为负。虽然Q1 2026调整后EBITDA首次转正，但距离持续盈利仍有距离。
+회사는 연간 흑자를 실현한 적이 없다. FY2025 순손실 C$161.9M, TTM 순손실 C$132.6M이며 누적 잉여현금흐름은 계속 마이너스다. Q1 2026 조정 EBITDA가 처음으로 흑자 전환했으나 지속적인 흑자까지는 아직 거리가 있다.
 
-**数据来源：** [Alpha Spread](https://www.alphaspread.com/security/tsx/aii/summary)、[Simply Wall St](https://simplywall.st/stocks/ca/materials/tsx-aii/almonty-industries-shares)、[NewsCase](https://www.newscase.com/almonty-soaring-revenue-meets-persistent-loss-as-sangdong-ramp-up-tests-investor-conviction/)
+**데이터 출처:** [Alpha Spread](https://www.alphaspread.com/security/tsx/aii/summary), [Simply Wall St](https://simplywall.st/stocks/ca/materials/tsx-aii/almonty-industries-shares), [NewsCase](https://www.newscase.com/almonty-soaring-revenue-meets-persistent-loss-as-sangdong-ramp-up-tests-investor-conviction/)
 
 ---
 
-## 八、竞争格局与护城河
+## 8. 경쟁 구도와 해자
 
-### 非中国钨供应格局
+### 비중국 텅스텐 공급 구도
 
-全球钨供应严重集中于中国（80%+），非中国供应商极少：
+전 세계 텅스텐 공급은 중국에 심하게 집중되어 있고(80%+), 비중국 공급업체는 극히 적다.
 
-| 公司/项目 | 位置 | 状态 |
+| 회사/프로젝트 | 위치 | 상태 |
 |----------|------|------|
-| **Almonty（Sangdong）** | 韩国 | 已投产，Phase 2待批 |
-| **Almonty（Panasqueira）** | 葡萄牙 | 持续运营130年 |
-| **Mactung** | 加拿大 | 2027年以后 |
-| **Bakuta** | 哈萨克斯坦 | 开发中 |
+| **Almonty(Sangdong)** | 한국 | 가동 개시, Phase 2 승인 대기 |
+| **Almonty(Panasqueira)** | 포르투갈 | 130년간 지속 운영 |
+| **Mactung** | 캐나다 | 2027년 이후 |
+| **Bakuta** | 카자흐스탄 | 개발 중 |
 
-**Sangdong满产可满足全球非中国钨需求的约40%**，这是极其稀缺的市场地位。
+**Sangdong이 풀가동하면 전 세계 비중국 텅스텐 수요의 약 40%를 충족할 수 있으며**, 이는 극히 희소한 시장 지위다.
 
-### 护城河评估
+### 해자 평가
 
-- **资源稀缺性**：全球高品位钨矿极少，Sangdong是世界上品位最高的钨矿之一
-- **客户锁定**：SeAH 60年独家包销合约、Tungsten Parts Wyoming供应协议
-- **政策壁垒**：DFARS禁令创造了制度性需求保障
-- **技术门槛**：Sangdong采用专有混合技术和现代水处理系统
-- **先发优势**：在五角大楼禁令生效前已经建成产能
+- **자원 희소성**: 전 세계에 고품위 텅스텐 광산은 극히 적으며, Sangdong은 세계에서 품위가 가장 높은 텅스텐 광산 중 하나
+- **고객 고정**: SeAH 60년 독점 오프테이크 계약, Tungsten Parts Wyoming 공급 계약
+- **정책 장벽**: DFARS 금지 조치가 제도적 수요 보장을 만들어냄
+- **기술 문턱**: Sangdong은 독자적인 혼합 기술과 현대식 수처리 시스템을 채택
+- **선발 우위**: 펜타곤 금지 조치 발효 전에 이미 생산능력을 구축
 
-**弱点：** 钨是大宗商品，长期价格受中国政策主导；矿业资产高度资本密集；单一商品依赖度高（虽然钼矿提供多元化）。
-
----
-
-## 九、情景分析
-
-### 牛市情景（概率约30%）
-
-- Phase 2通过 + Sangdong满产 + 钼矿按时投产 + APT价格维持$2,500+/MTU
-- 2027年营收US$5.5亿+，实现盈利
-- Russell 1000纳入带来持续机构买入
-- 目标价：US$30-40（对应前瞻P/S 6-8x）
-
-### 基准情景（概率约45%）
-
-- Phase 2通过但有小幅延迟 + Sangdong爬坡正常 + 钼矿2027年上半年投产 + APT价格回落至$1,500-2,000/MTU
-- 2027年营收US$3.5-4.5亿
-- 目标价：US$20-28（对应前瞻P/S 5-7x）
-
-### 熊市情景（概率约25%）
-
-- Phase 2不通过 + Sangdong产能爬坡困难 + 钼矿延期至2027年中 + APT价格回落至$1,000/MTU
-- 2027年营收US$1.5-2.5亿
-- 目标价：US$8-15（对应前瞻P/S 4-6x）
+**약점:** 텅스텐은 원자재이며 장기 가격은 중국 정책이 주도한다. 광업 자산은 자본 집약도가 매우 높다. 단일 상품 의존도가 높다(몰리브덴 광산이 다각화를 제공하긴 한다).
 
 ---
 
-## 十、结论与投资建议
+## 9. 시나리오 분석
 
-### 核心判断
+### 강세 시나리오(확률 약 30%)
 
-Almonty Industries 是一个**高风险、高回报的"瓶颈投资"标的**。它的投资逻辑建立在三个支柱上：
+- Phase 2 통과 + Sangdong 풀가동 + 몰리브덴 광산 제때 가동 + APT 가격 $2,500+/MTU 유지
+- 2027년 매출 US$5.5억+, 흑자 실현
+- Russell 1000 편입이 지속적인 기관 매수를 가져옴
+- 목표주가: US$30-40(선행 P/S 6-8x에 해당)
 
-1. **钨的不可替代性**——WF6是半导体制造的S级瓶颈，没有替代品
-2. **中国垄断的反面**——Sangdong是唯一能规模化替代中国供应的西方钨矿
-3. **合约收入锁定**——SeAH钼矿60年包销提供US$2.34亿/年收入底线
+### 기준 시나리오(확률 약 45%)
 
-这三个支柱如果成立，Almonty在2027年将成为一个年收入US$5亿级别的矿业公司，当前US$57亿市值对应前瞻P/S约10-11x，在大宗商品超级周期背景下并不算贵。
+- Phase 2 통과하나 소폭 지연 + Sangdong 램프업 정상 + 몰리브덴 광산 2027년 상반기 가동 + APT 가격 $1,500-2,000/MTU로 하락
+- 2027년 매출 US$3.5-4.5억
+- 목표주가: US$20-28(선행 P/S 5-7x에 해당)
 
-### 但是，必须正视以下事实：
+### 약세 시나리오(확률 약 25%)
 
-- **公司从未盈利过**，Q1 2026才刚刚EBITDA转正
-- **Trailing估值（P/S 159x）处于荒谬水平**，全部的合理性取决于未来兑现
-- **Sangdong投产仅3个月**，能否稳定运行至满产尚未证明
-- **钼矿收入至少还要等6个月**才能开始兑现
-- **Beta 2.03**，股价可能在催化剂前后剧烈波动
+- Phase 2 부결 + Sangdong 생산능력 램프업 난항 + 몰리브덴 광산 2027년 중반으로 지연 + APT 가격 $1,000/MTU로 하락
+- 2027년 매출 US$1.5-2.5억
+- 목표주가: US$8-15(선행 P/S 4-6x에 해당)
 
-### 投资建议：**有条件的观望，等待更好的入场时机**
+---
 
-| 投资者类型 | 建议 |
+## 10. 결론과 투자 제안
+
+### 핵심 판단
+
+Almonty Industries는 **고위험·고수익의 "병목 투자" 종목**이다. 투자 논리는 세 기둥 위에 서 있다.
+
+1. **텅스텐의 대체 불가능성**: WF6는 반도체 제조의 S급 병목이며 대체재가 없다
+2. **중국 독점의 반대편**: Sangdong은 중국 공급을 규모 있게 대체할 수 있는 유일한 서방 텅스텐 광산이다
+3. **계약 매출 고정**: SeAH 몰리브덴 광산 60년 오프테이크가 US$2.34억/년의 매출 하한을 제공한다
+
+이 세 기둥이 성립하면 Almonty는 2027년에 연 매출 US$5억 규모의 광업 회사가 된다. 현재 US$57억 시가총액은 선행 P/S 약 10-11x에 해당하며, 원자재 슈퍼사이클 배경에서는 비싸다고 할 수 없다.
+
+### 다만 다음 사실을 직시해야 한다:
+
+- **회사는 흑자를 낸 적이 없으며**, Q1 2026에야 겨우 EBITDA가 흑자 전환했다
+- **Trailing 밸류에이션(P/S 159x)은 터무니없는 수준이며**, 합리성 전부가 미래의 실현에 달려 있다
+- **Sangdong은 가동된 지 3개월에 불과하며**, 풀가동까지 안정적으로 운영될 수 있을지 증명되지 않았다
+- **몰리브덴 광산 매출은 최소 6개월을 더 기다려야** 실현되기 시작한다
+- **Beta 2.03**, 주가는 촉매 전후로 극심하게 변동할 수 있다
+
+### 투자 제안: **조건부 관망, 더 나은 진입 시점 대기**
+
+| 투자자 유형 | 제안 |
 |-----------|------|
-| **高风险偏好/小仓位投机** | 可在Phase 2投票（6/8-9）前建立试探性仓位（总投资组合的1-3%），利用催化剂事件获取波段收益 |
-| **价值投资者** | **观望**。等待：(1) Sangdong连续2-3个季度的稳定产出数据；(2) 钼矿投产确认；(3) APT价格正常化后的估值回调。理想入场点在US$12-16区间 |
-| **保守型投资者** | **回避**。一家从未盈利的矿业公司以US$57亿市值交易，无论故事多好，风险收益比不适合保守投资者 |
+| **고위험 선호/소규모 투기** | Phase 2 투표(6/8-9) 전에 탐색적 포지션(전체 포트폴리오의 1-3%)을 구축해 촉매 이벤트로 단기 수익을 노릴 수 있다 |
+| **가치투자자** | **관망**. 다음을 기다린다: (1) Sangdong의 2-3개 분기 연속 안정적 산출 데이터, (2) 몰리브덴 광산 가동 확인, (3) APT 가격 정상화 이후의 밸류에이션 조정. 이상적 진입점은 US$12-16 구간 |
+| **보수적 투자자** | **회피**. 흑자를 낸 적이 없는 광업 회사가 US$57억 시가총액에 거래되고 있다. 스토리가 아무리 좋아도 위험 대비 수익은 보수적 투자자에게 맞지 않는다 |
 
-### 关键监控节点
+### 핵심 모니터링 시점
 
-- **6月8-9日**：Phase 2股东投票结果——通过/不通过将直接影响中期估值
-- **6月29日**：Russell 1000纳入生效——被动资金流入窗口
-- **Q2 2026财报**：Sangdong第一个完整季度的产量和收入数据——验证执行力的关键
-- **2026年底**：钼矿投产——US$2.34亿/年收入能否如期兑现
-- **2027年1月**：五角大楼非中国钨采购禁令正式生效——需求端催化
+- **6월 8-9일**: Phase 2 주주 투표 결과. 통과/부결이 중기 밸류에이션에 직접 영향
+- **6월 29일**: Russell 1000 편입 발효. 패시브 자금 유입 창구
+- **Q2 2026 실적**: Sangdong의 첫 완전한 분기 생산량과 매출 데이터. 실행력 검증의 핵심
+- **2026년 말**: 몰리브덴 광산 가동. US$2.34억/년 매출이 예정대로 실현되는지
+- **2027년 1월**: 펜타곤의 비중국 텅스텐 조달 금지 조치 정식 발효. 수요 측 촉매
 
 ---
 
-## 数据来源汇总
+## 데이터 출처 종합
 
 - [StockAnalysis - ALM](https://stockanalysis.com/stocks/alm/)
-- [Almonty Industries 官网](https://almonty.com/)
-- [SEC 6-K 文件 - Q1 2026](https://www.sec.gov/Archives/edgar/data/0001670061/000149315226022338/ex99-1.htm)
-- [Investing.com - Oppenheimer目标价上调](https://www.investing.com/news/analyst-ratings/oppenheimer-raises-almonty-industries-stock-price-target-to-25-on-tungsten-prices-93CH-4723984)
-- [StockTitan - Russell 1000纳入](https://www.stocktitan.net/news/ALM/almonty-industries-set-to-join-large-cap-russell-1000-index-and-5f1dfb6ltbjw.html)
-- [BusinessWire - SeAH包销协议](https://www.businesswire.com/news/home/20250129315431/en/)
-- [BusinessWire - Sangdong Phase 1完工](https://www.businesswire.com/news/home/20260316607350/en/)
-- [GOLDINVEST - 钨价超级周期](https://goldinvest.de/en/tungsten-prices-explode-in-2026-supercycle-driven-by-china-quotas)
-- [Mining.com - SeAH钼矿合约](https://www.mining.com/almonty-enters-molybdenum-offtake-deal-with-spacex-contractor-seah/)
-- [TungstenPrices.com - APT实时价格](https://tungstenprices.com/)
-- [Alpha Spread - AII估值](https://www.alphaspread.com/security/tsx/aii/summary)
-- [Simply Wall St - AII分析](https://simplywall.st/stocks/ca/materials/tsx-aii/almonty-industries-shares)
+- [Almonty Industries 공식 사이트](https://almonty.com/)
+- [SEC 6-K 문서 - Q1 2026](https://www.sec.gov/Archives/edgar/data/0001670061/000149315226022338/ex99-1.htm)
+- [Investing.com - Oppenheimer 목표주가 상향](https://www.investing.com/news/analyst-ratings/oppenheimer-raises-almonty-industries-stock-price-target-to-25-on-tungsten-prices-93CH-4723984)
+- [StockTitan - Russell 1000 편입](https://www.stocktitan.net/news/ALM/almonty-industries-set-to-join-large-cap-russell-1000-index-and-5f1dfb6ltbjw.html)
+- [BusinessWire - SeAH 오프테이크 계약](https://www.businesswire.com/news/home/20250129315431/en/)
+- [BusinessWire - Sangdong Phase 1 완공](https://www.businesswire.com/news/home/20260316607350/en/)
+- [GOLDINVEST - 텅스텐 가격 슈퍼사이클](https://goldinvest.de/en/tungsten-prices-explode-in-2026-supercycle-driven-by-china-quotas)
+- [Mining.com - SeAH 몰리브덴 광산 계약](https://www.mining.com/almonty-enters-molybdenum-offtake-deal-with-spacex-contractor-seah/)
+- [TungstenPrices.com - APT 실시간 가격](https://tungstenprices.com/)
+- [Alpha Spread - AII 밸류에이션](https://www.alphaspread.com/security/tsx/aii/summary)
+- [Simply Wall St - AII 분석](https://simplywall.st/stocks/ca/materials/tsx-aii/almonty-industries-shares)
 - [Morningstar - ALM](https://www.morningstar.com/stocks/xnas/alm/quote)

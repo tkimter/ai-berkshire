@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""A股数据工具 — 腾讯行情 + 东方财富搜索/财务，零外部依赖（仅 stdlib）。
+"""A주 데이터 도구 — 텐센트 시세(腾讯行情) + 둥팡차이푸(东方财富) 검색/재무, 외부 의존성 없음(stdlib만 사용).
 
-为 Claude Code Skills 提供 A 股实时行情、财务数据等数据。
-设计原则：独立模块，不影响现有工具；使用 curl 直连绕过系统代理。
+Claude Code Skills 에 A주 실시간 시세, 재무 데이터 등을 제공한다.
+설계 원칙: 독립 모듈로 기존 도구에 영향을 주지 않는다. curl 직접 연결로 시스템 프록시를 우회한다.
 
-用法（由 Skills 自动调用）：
-    python3.11 tools/ashare_data.py quote 600519                    # 实时行情
-    python3.11 tools/ashare_data.py financials 600519               # 核心财务数据（近5年）
-    python3.11 tools/ashare_data.py valuation 600519                # 估值指标
-    python3.11 tools/ashare_data.py search 茅台                      # 搜索股票代码
+사용법(Skills 가 자동 호출):
+    python3.11 tools/ashare_data.py quote 600519                    # 실시간 시세
+    python3.11 tools/ashare_data.py financials 600519               # 핵심 재무 데이터(최근 5년)
+    python3.11 tools/ashare_data.py valuation 600519                # 밸류에이션 지표
+    python3.11 tools/ashare_data.py search 茅台                      # 종목 코드 검색(검색어는 중국어 종목명 그대로: 茅台=마오타이)
 
-需要 Python >= 3.8，零外部依赖。
+Python >= 3.8 필요, 외부 의존성 없음.
 """
 
 import argparse
@@ -23,8 +23,21 @@ from decimal import Decimal, ROUND_HALF_EVEN
 _TIMEOUT = 15
 
 
+def _safe_stdio():
+    """콘솔 인코딩(예: Windows cp949)으로 표현할 수 없는 문자(이모지·간체자) 때문에 죽지 않게 한다."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream.isatty() or os.environ.get("PYTHONIOENCODING"):
+                stream.reconfigure(errors="replace")
+            else:
+                # 파이프·리다이렉트 출력은 UTF-8 로 고정한다(중국어 종목명·기호가 '?' 로 뭉개지지 않게)
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def _curl(url):
-    """用 curl --noproxy 直连，绕过系统代理。"""
+    """curl --noproxy 로 직접 연결해 시스템 프록시를 우회한다."""
     result = subprocess.run(
         ["/usr/bin/curl", "-s", "--noproxy", "*",
          "-H", "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
@@ -32,8 +45,8 @@ def _curl(url):
         capture_output=True, timeout=_TIMEOUT,
     )
     if result.returncode != 0 or not result.stdout.strip():
-        raise ConnectionError(f"请求失败: {url}")
-    # 腾讯行情 API 返回 GBK 编码，其他返回 UTF-8
+        raise ConnectionError(f"요청 실패: {url}")
+    # 텐센트 시세 API 는 GBK 인코딩으로, 나머지는 UTF-8 로 응답한다
     try:
         return result.stdout.decode("utf-8")
     except UnicodeDecodeError:
@@ -41,7 +54,7 @@ def _curl(url):
 
 
 def _curl_json(url, params=None):
-    """curl 获取 JSON。"""
+    """curl 로 JSON 을 가져온다."""
     if params:
         from urllib.parse import urlencode
         url = f"{url}?{urlencode(params)}"
@@ -49,11 +62,11 @@ def _curl_json(url, params=None):
 
 
 # ---------------------------------------------------------------------------
-# 腾讯行情 API（稳定可靠，无需鉴权）
+# 텐센트 시세 API(안정적이며 인증 불필요)
 # ---------------------------------------------------------------------------
 
 def _qq_code(code: str) -> str:
-    """将股票代码转为腾讯行情格式。"""
+    """종목 코드를 텐센트 시세 형식으로 바꾼다."""
     code = code.strip().replace(".SH", "").replace(".SZ", "").replace(".BJ", "")
     if code.startswith(("6", "9", "5")):
         return f"sh{code}"
@@ -65,7 +78,7 @@ def _qq_code(code: str) -> str:
 
 
 def _parse_qq_quote(raw: str) -> dict:
-    """解析腾讯行情数据。格式：v_shXXXXXX="字段1~字段2~..."; """
+    """텐센트 시세 데이터를 파싱한다. 형식: v_shXXXXXX="필드1~필드2~..."; """
     start = raw.find('"')
     end = raw.rfind('"')
     if start < 0 or end <= start:
@@ -79,7 +92,7 @@ def _parse_qq_quote(raw: str) -> dict:
         "price": fields[3],
         "prev_close": fields[4],
         "open": fields[5],
-        "volume": fields[6],         # 手
+        "volume": fields[6],         # 단위: 手(1手 = 100주)
         "buy_vol": fields[7],
         "sell_vol": fields[8],
         "high": fields[33] if len(fields) > 33 else fields[3],
@@ -89,10 +102,10 @@ def _parse_qq_quote(raw: str) -> dict:
         "turnover_amt": fields[37] if len(fields) > 37 else "-",
         "turnover_rate": fields[38] if len(fields) > 38 else "-",
         "pe": fields[39] if len(fields) > 39 else "-",
-        "market_cap": fields[45] if len(fields) > 45 else "-",    # 总市值（亿）
-        "float_cap": fields[44] if len(fields) > 44 else "-",     # 流通市值（亿）
+        "market_cap": fields[45] if len(fields) > 45 else "-",    # 시가총액(억 위안)
+        "float_cap": fields[44] if len(fields) > 44 else "-",     # 유통 시가총액(억 위안)
         "pb": fields[46] if len(fields) > 46 else "-",
-        # 注意：腾讯 ~ 分隔协议第 47/48 位是当日涨停价/跌停价，不是 52 周极值（issue #70）
+        # 주의: 텐센트 ~ 구분 프로토콜의 47/48번째 필드는 당일 상한가/하한가이며 52주 고저가 아니다(issue #70)
         "limit_up": fields[47] if len(fields) > 47 else "-",
         "limit_down": fields[48] if len(fields) > 48 else "-",
         "total_shares": fields[38] if len(fields) > 38 else "-",  # will recalculate
@@ -100,7 +113,7 @@ def _parse_qq_quote(raw: str) -> dict:
 
 
 def _em_secid(code: str) -> str:
-    """将股票代码转为东方财富 secid 格式：沪市前缀 1.，深市/北交所前缀 0.。"""
+    """종목 코드를 둥팡차이푸 secid 형식으로 바꾼다: 상하이는 접두 1., 선전/베이징거래소는 접두 0."""
     code = code.strip().replace(".SH", "").replace(".SZ", "").replace(".BJ", "")
     if code.startswith(("6", "9", "5")):
         return f"1.{code}"
@@ -108,10 +121,11 @@ def _em_secid(code: str) -> str:
 
 
 def _fetch_52w(code: str) -> tuple:
-    """从东方财富取 52 周最高/最低（f174/f175）。
+    """둥팡차이푸에서 52주 최고/최저(f174/f175)를 가져온다.
 
-    腾讯行情协议无此数据。优先 push2delay（主站 push2 对连续请求限流较严，
-    52 周极值不受延时行情影响），失败回退 push2。取不到返回 ("-", "-")。
+    텐센트 시세 프로토콜에는 이 데이터가 없다. push2delay 를 우선 사용하고(메인 push2 는
+    연속 요청 제한이 엄격하며, 52주 고저는 지연 시세의 영향을 받지 않는다) 실패하면 push2 로
+    되돌아간다. 가져오지 못하면 ("-", "-") 를 반환한다.
     """
     secid = _em_secid(code)
     query = f"api/qt/stock/get?secid={secid}&fields=f174,f175&invt=2&fltt=2"
@@ -134,9 +148,9 @@ def _fmt_yi(value) -> str:
     except (ValueError, TypeError):
         return str(value)
     if abs(v) >= 1e8:
-        return f"{v / 1e8:.2f}亿"
+        return f"{v / 1e8:.2f}억"
     if abs(v) >= 1e4:
-        return f"{v / 1e4:.2f}万"
+        return f"{v / 1e4:.2f}만"
     return f"{v:.2f}"
 
 
@@ -150,80 +164,80 @@ def _fmt_pct(value) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 命令实现
+# 명령 구현
 # ---------------------------------------------------------------------------
 
 def cmd_quote(code: str):
-    """实时行情快照。"""
+    """실시간 시세 스냅샷."""
     qq_code = _qq_code(code)
     raw = _curl(f"https://qt.gtimg.cn/q={qq_code}")
     d = _parse_qq_quote(raw)
     if not d:
-        print(f"❌ 未找到股票 {code}")
+        print(f"❌ 종목 {code} 을(를) 찾지 못했습니다")
         return
 
     print("=" * 60)
-    print(f"实时行情: {d['name']} ({d['code']})")
+    print(f"실시간 시세: {d['name']} ({d['code']})")
     print("=" * 60)
-    print(f"  当前价:     {d['price']}")
-    print(f"  涨跌幅:     {d['change_pct']}%")
-    print(f"  涨跌额:     {d['change_amt']}")
-    print(f"  今开:       {d['open']}")
-    print(f"  最高:       {d['high']}")
-    print(f"  最低:       {d['low']}")
-    print(f"  昨收:       {d['prev_close']}")
-    print(f"  成交量:     {d['volume']} 手")
-    print(f"  成交额:     {d['turnover_amt']}万")
-    print(f"  总市值:     {d['market_cap']}亿")
-    print(f"  流通市值:   {d['float_cap']}亿")
-    print(f"  PE(动):     {d['pe']}")
-    print(f"  PB:         {d['pb']}")
-    print(f"  换手率:     {d['turnover_rate']}%")
+    print(f"  현재가:       {d['price']}")
+    print(f"  등락률:       {d['change_pct']}%")
+    print(f"  등락액:       {d['change_amt']}")
+    print(f"  시가:         {d['open']}")
+    print(f"  고가:         {d['high']}")
+    print(f"  저가:         {d['low']}")
+    print(f"  전일 종가:    {d['prev_close']}")
+    print(f"  거래량:       {d['volume']} 手(1手=100주)")
+    print(f"  거래대금:     {d['turnover_amt']}만")
+    print(f"  시가총액:     {d['market_cap']}억")
+    print(f"  유통 시총:    {d['float_cap']}억")
+    print(f"  PE(동적):     {d['pe']}")
+    print(f"  PB:           {d['pb']}")
+    print(f"  회전율:       {d['turnover_rate']}%")
     high_52w, low_52w = _fetch_52w(code)
-    print(f"  52周最高:   {high_52w}")
-    print(f"  52周最低:   {low_52w}")
+    print(f"  52주 최고:    {high_52w}")
+    print(f"  52주 최저:    {low_52w}")
 
 
 def cmd_valuation(code: str):
-    """估值指标汇总。"""
+    """밸류에이션 지표 요약."""
     qq_code = _qq_code(code)
     raw = _curl(f"https://qt.gtimg.cn/q={qq_code}")
     d = _parse_qq_quote(raw)
     if not d:
-        print(f"❌ 未找到股票 {code}")
+        print(f"❌ 종목 {code} 을(를) 찾지 못했습니다")
         return
 
     price = d["price"]
     market_cap_yi = d["market_cap"]
 
     print("=" * 60)
-    print(f"估值指标: {d['name']} ({d['code']})")
+    print(f"밸류에이션 지표: {d['name']} ({d['code']})")
     print("=" * 60)
-    print(f"  当前价:     {price}")
-    print(f"  总市值:     {market_cap_yi}亿")
-    print(f"  流通市值:   {d['float_cap']}亿")
-    print(f"  PE(动):     {d['pe']}")
-    print(f"  PB:         {d['pb']}")
+    print(f"  현재가:       {price}")
+    print(f"  시가총액:     {market_cap_yi}억")
+    print(f"  유통 시총:    {d['float_cap']}억")
+    print(f"  PE(동적):     {d['pe']}")
+    print(f"  PB:           {d['pb']}")
     high_52w, low_52w = _fetch_52w(code)
-    print(f"  52周最高:   {high_52w}")
-    print(f"  52周最低:   {low_52w}")
+    print(f"  52주 최고:    {high_52w}")
+    print(f"  52주 최저:    {low_52w}")
 
-    # 市值验算
+    # 시가총액 검산
     try:
         p = Decimal(price)
         cap = Decimal(market_cap_yi) * Decimal("1e8")
         shares = cap / p
-        print(f"\n  推算总股本: {_fmt_yi(float(shares))}股")
+        print(f"\n  추산 총주식수: {_fmt_yi(float(shares))}주")
         calc_cap = p * shares
         reported_cap = Decimal(market_cap_yi) * Decimal("1e8")
         diff = abs(calc_cap - reported_cap) / reported_cap * 100
-        print(f"  市值验算:   ✅ 一致（推算法，偏差 {float(diff):.1f}%）")
+        print(f"  시총 검산:     ✅ 일치(역산 방식, 편차 {float(diff):.1f}%)")
     except Exception:
         pass
 
 
 def cmd_financials(code: str):
-    """近5年核心财务数据。"""
+    """최근 5년 핵심 재무 데이터."""
     qq_code = _qq_code(code)
     raw = _curl(f"https://qt.gtimg.cn/q={qq_code}")
     d = _parse_qq_quote(raw)
@@ -232,11 +246,12 @@ def cmd_financials(code: str):
     code_clean = code.strip().replace(".SH", "").replace(".SZ", "").replace(".BJ", "")
     market = "SH" if code_clean.startswith(("6", "9", "5")) else "SZ"
 
-    # 东方财富 datacenter API（年报数据）
+    # 둥팡차이푸 datacenter API(연간 보고서 데이터)
     fin_url = "https://datacenter.eastmoney.com/securities/api/data/get"
     params = {
         "type": "RPT_F10_FINANCE_MAINFINADATA",
         "sty": "ALL",
+        # "年报"(연간 보고서)는 API 필터 값이므로 중국어 그대로 둔다
         "filter": f'(SECUCODE="{code_clean}.{market}")(REPORT_TYPE="年报")',
         "p": "1",
         "ps": "5",
@@ -252,7 +267,7 @@ def cmd_financials(code: str):
     except Exception:
         pass
 
-    # 如果年报筛选无结果，去掉年报限制
+    # 연간 보고서 필터로 결과가 없으면 그 제한을 뺀다
     if not reports:
         params["filter"] = f'(SECUCODE="{code_clean}.{market}")'
         try:
@@ -262,16 +277,16 @@ def cmd_financials(code: str):
             pass
 
     print("=" * 60)
-    print(f"核心财务数据: {name} ({code_clean})")
+    print(f"핵심 재무 데이터: {name} ({code_clean})")
     print("=" * 60)
 
     if not reports:
-        print("  ⚠️ 未能获取财务数据，建议通过 WebSearch 补充")
+        print("  ⚠️ 재무 데이터를 가져오지 못했습니다. WebSearch 로 보완하세요")
         return
 
     for r in reports[:5]:
         date = r.get("REPORT_DATE", "")[:10]
-        report_name = r.get("REPORT_DATE_NAME", "")
+        report_name = r.get("REPORT_DATE_NAME", "")  # API 가 돌려주는 중국어 값(예: 2024年报)
         revenue = r.get("TOTALOPERATEREVE")
         net_profit = r.get("PARENTNETPROFIT")
         eps = r.get("EPSJB")
@@ -282,23 +297,23 @@ def cmd_financials(code: str):
 
         print(f"\n  --- {date} {report_name} ---")
         if revenue is not None:
-            print(f"  营收:           {_fmt_yi(revenue)}")
+            print(f"  매출:               {_fmt_yi(revenue)}")
         if rev_growth is not None:
-            print(f"  营收增速:       {_fmt_pct(rev_growth)}")
+            print(f"  매출 증가율:        {_fmt_pct(rev_growth)}")
         if net_profit is not None:
-            print(f"  归母净利润:     {_fmt_yi(net_profit)}")
+            print(f"  지배주주 순이익:    {_fmt_yi(net_profit)}")
         if profit_growth is not None:
-            print(f"  净利润增速:     {_fmt_pct(profit_growth)}")
+            print(f"  순이익 증가율:      {_fmt_pct(profit_growth)}")
         if eps is not None:
-            print(f"  基本每股收益:   {eps}")
+            print(f"  기본 EPS:           {eps}")
         if bps is not None:
-            print(f"  每股净资产:     {bps:.2f}")
+            print(f"  주당 순자산(BPS):   {bps:.2f}")
         if roe is not None:
-            print(f"  ROE(加权):      {_fmt_pct(roe)}")
+            print(f"  ROE(가중):          {_fmt_pct(roe)}")
 
 
 def cmd_search(keyword: str):
-    """搜索股票代码。"""
+    """종목 코드 검색."""
     url = "https://searchadapter.eastmoney.com/api/suggest/get"
     # Use env var or fall back to the public eastmoney search token
     token = os.environ.get("EASTMONEY_SEARCH_TOKEN") or "D43BF722C8E33BDC906FB84D85E326E8"
@@ -312,42 +327,43 @@ def cmd_search(keyword: str):
     results = data.get("QuotationCodeTable", {}).get("Data", [])
 
     if not results:
-        print(f"❌ 未找到匹配 '{keyword}' 的股票")
+        print(f"❌ '{keyword}' 와(과) 일치하는 종목을 찾지 못했습니다")
         return
 
     print("=" * 60)
-    print(f"搜索结果: '{keyword}'")
+    print(f"검색 결과: '{keyword}'")
     print("=" * 60)
     for r in results:
         code = r.get("Code", "")
         name = r.get("Name", "")
         market = r.get("MktNum", "")
-        mkt_label = {"1": "沪", "2": "深", "3": "北"}.get(str(market), "")
+        mkt_label = {"1": "상하이", "2": "선전", "3": "베이징"}.get(str(market), "")
         print(f"  {code} {name} [{mkt_label}]")
 
 
 # ---------------------------------------------------------------------------
-# CLI 入口
+# CLI 진입점
 # ---------------------------------------------------------------------------
 
 def main():
+    _safe_stdio()
     parser = argparse.ArgumentParser(
-        description="A股数据工具 — 腾讯行情 + 东方财富财务数据",
+        description="A주 데이터 도구 - 텐센트 시세 + 둥팡차이푸 재무 데이터",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
 
-    p_quote = sub.add_parser("quote", help="实时行情")
-    p_quote.add_argument("code", help="股票代码，如 600519")
+    p_quote = sub.add_parser("quote", help="실시간 시세")
+    p_quote.add_argument("code", help="종목 코드(예: 600519)")
 
-    p_fin = sub.add_parser("financials", help="核心财务数据（近5年）")
-    p_fin.add_argument("code", help="股票代码")
+    p_fin = sub.add_parser("financials", help="핵심 재무 데이터(최근 5년)")
+    p_fin.add_argument("code", help="종목 코드")
 
-    p_val = sub.add_parser("valuation", help="估值指标")
-    p_val.add_argument("code", help="股票代码")
+    p_val = sub.add_parser("valuation", help="밸류에이션 지표")
+    p_val.add_argument("code", help="종목 코드")
 
-    p_search = sub.add_parser("search", help="搜索股票代码")
-    p_search.add_argument("keyword", help="公司名或关键词")
+    p_search = sub.add_parser("search", help="종목 코드 검색")
+    p_search.add_argument("keyword", help="회사명(중국어) 또는 키워드")
 
     args = parser.parse_args()
 

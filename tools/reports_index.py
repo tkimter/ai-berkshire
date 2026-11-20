@@ -2,16 +2,17 @@
 """reports/ 아래 Git에 올라간 보고서를 훑어 연구 색인을 만든다.
 
 산출물 두 가지:
-  reports/index.json  —— 기계가 읽는 목록. 스크립트·웹페이지용
-  reports/README.md   —— 사람이 읽는 색인. GitHub의 보고서 입구
+  reports/index.json  - 기계가 읽는 목록. 스크립트·웹페이지용
+  reports/README.md   - 사람이 읽는 색인. GitHub의 보고서 입구
 
 메타데이터 우선순위: 파일의 YAML front-matter > 파일명 > 본문 > git 커밋 날짜.
 보고서 파일 자체는 수정하지 않는다.
 새 보고서는 먼저 git add 해야 한다. 미추적·무시·intent-to-add 파일은 공개 색인에 넣지 않는다.
 
-언어: 보고서는 한국어 기준이다. 기존 중국어 보고서도 계속 색인되도록 파일명 키워드는
-한국어·중국어를 모두 인식한다. index.json의 bucket/type 값은 tools/build_site.py가
-그대로 읽으므로 내부 키(중국어)를 유지하고, 사람이 읽는 README에서만 한국어 라벨로 바꿔 보여 준다.
+언어: 저장소는 한국어 전용이다. 파일명 키워드는 한국어·영어만 인식한다.
+index.json의 bucket/type 값도 한국어이며 tools/build_site.py와 README가 그 값을 그대로 쓴다.
+  bucket: 기업 / 테마 / 대가연구 / 스크리닝풀 / 기타
+  type:   연구 / 실적 / 게시글 / 심층시리즈 / 비교 / 조직·경영 / 밸류·비중 / 스크리닝 / 초안
 
 사용법:
   python3 tools/reports_index.py            # 색인 생성
@@ -29,40 +30,33 @@ REPORTS = os.path.join(ROOT, "reports")
 CONFIG = os.path.join(REPORTS, "_index", "config.json")
 
 DATE_IN_NAME = re.compile(r"(20[2-3]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])")
-DATE_IN_BODY = re.compile(r"(20[2-3]\d)\s*[-/年년]\s*(\d{1,2})\s*[-/月월]\s*(\d{1,2})")
+DATE_IN_BODY = re.compile(r"(20[2-3]\d)\s*[-/년]\s*(\d{1,2})\s*[-/월]\s*(\d{1,2})")
 H1 = re.compile(r"^#\s+(.+?)\s*$")
 
 # 보고서 유형: 위에서부터 차례로 맞춰 보고 먼저 걸린 것으로 정한다.
-# 왼쪽 라벨은 index.json에 들어가는 내부 키(변경 금지, build_site.py가 사용), 키워드는 한·중·영 모두.
+# 왼쪽 라벨이 index.json의 type 값이다(build_site.py도 같은 값을 쓴다). 키워드는 한국어·영어.
 TYPE_RULES = [
     # 감사/재검토류 완성 보고서는 여기 해당하지 않는다. 중간 산출물은 is_draft가 가린다
-    ("底稿", ["研究底稿", "核验", "评审", "verify", "底稿", "对账",
-              "연구초안", "초안", "독자리뷰", "검증기록", "대사"]),
-    ("财报", ["earnings", "财报", "中报", "年报", "季报", "业绩", "电话会", "q1", "q2", "q3", "q4",
+    ("초안", ["verify", "연구초안", "초안", "독자리뷰", "검증기록", "대사"]),
+    ("실적", ["earnings", "q1", "q2", "q3", "q4",
               "실적", "분기보고", "반기보고", "사업보고", "컨퍼런스콜"]),
-    ("公众号", ["公众号", "wechat", "推文", "공식계정"]),
-    ("深度系列", ["看懂", "深度研究", "deep-dive", "深度投研", "제대로알기", "심층연구"]),
-    ("横评对比", ["横评", "对比", "vs", "对决", "pk", "换仓", "轮动", "비교", "대결", "로테이션"]),
-    ("组织管理", ["7s", "管理层", "组织", "management", "경영진", "조직"]),
-    ("估值仓位", ["估值", "赔率", "凯利", "仓位", "valuation", "fair_value", "终值",
-                  "밸류에이션", "배당률", "켈리", "비중", "터미널밸류", "종말가치"]),
-    ("筛选", ["funnel", "筛选", "召回", "screen", "候选池", "스크리닝", "후보풀", "퍼널"]),
+    ("게시글", ["게시글"]),
+    ("심층시리즈", ["deep-dive", "제대로알기", "심층연구"]),
+    ("비교", ["vs", "pk", "비교", "대결", "로테이션"]),
+    ("조직·경영", ["7s", "management", "경영진", "조직"]),
+    ("밸류·비중", ["valuation", "fair_value",
+                   "밸류에이션", "배당률", "켈리", "비중", "터미널밸류", "종말가치"]),
+    ("스크리닝", ["funnel", "screen", "스크리닝", "후보풀", "퍼널"]),
 ]
+DEFAULT_TYPE = "연구"
+DRAFT_TYPE = "초안"
 
-# 사람이 읽는 색인(reports/README.md, 루트 README)에 쓰는 한국어 표시 라벨
-TYPE_KO = {
-    "研究": "연구", "财报": "실적", "公众号": "공식계정", "深度系列": "심층시리즈",
-    "横评对比": "비교", "组织管理": "조직·경영", "估值仓位": "밸류·비중",
-    "筛选": "스크리닝", "底稿": "초안",
-}
-# front-matter의 type: 은 한국어 라벨로 써도 내부 키로 바꿔 받는다
-TYPE_FROM_KO = {v: k for k, v in TYPE_KO.items()}
-WECHAT_MARKS = ("公众号", "공식계정")
+# bucket 값
+B_COMPANY, B_THEME, B_MASTER, B_SCREEN, B_OTHER = "기업", "테마", "대가연구", "스크리닝풀", "기타"
+
+# 파일명에 이 표시가 있으면 초안으로 보지 않는다
+POST_MARKS = ("게시글",)
 ROOT_GROUP = "종합·비교"
-
-
-def type_label(t):
-    return TYPE_KO.get(t, t)
 
 
 def load_config():
@@ -137,7 +131,7 @@ def guess_type(name, relpath):
         for k in keys:
             if k in hay:
                 return label
-    return "研究"  # 내부 키. 표시 라벨은 TYPE_KO
+    return DEFAULT_TYPE
 
 
 def is_draft(relr, cfg):
@@ -145,7 +139,7 @@ def is_draft(relr, cfg):
     rules = cfg.get("drafts") or {}
     parts = relr.split("/")
     stem = re.sub(r"\.md$", "", parts[-1])
-    if any(mark in stem for mark in WECHAT_MARKS):
+    if any(mark in stem for mark in POST_MARKS):
         return False
     dirs = [d.lower() for d in parts[:-1]]
     draft_dirs = {d.lower() for d in rules.get("dirs", [])}
@@ -181,14 +175,14 @@ def guess_date(meta, filename, parent, head, gitmap, relpath):
 def bucket_of(top, cfg):
     top = cfg["aliases"].get(top, top)
     if top in cfg["screens"]:
-        return "筛选池", top
+        return B_SCREEN, top
     if top in cfg["themes"]:
-        return "专题", top
+        return B_THEME, top
     if top in cfg["masters"]:
-        return "大师研究", top
+        return B_MASTER, top
     if top in cfg["other"]:
-        return "其他", top
-    return "公司", top
+        return B_OTHER, top
+    return B_COMPANY, top
 
 
 def collect(cfg, gitmap):
@@ -226,15 +220,14 @@ def collect(cfg, gitmap):
 
             if top:
                 bucket, group = bucket_of(top, cfg)
-                if bucket == "公司" and top not in known and top not in cfg["aliases"]:
+                if bucket == B_COMPANY and top not in known and top not in cfg["aliases"]:
                     unknown_dirs.add(top)
             else:
-                bucket, group = "专题", ROOT_GROUP
+                bucket, group = B_THEME, ROOT_GROUP
 
             date, dsrc = guess_date(meta, fn, parts[-2] if len(parts) > 1 else "", head, gitmap, rel)
             series = parts[1] if len(parts) > 2 else ""
-            rtype = meta.get("type") or ("底稿" if is_draft(relr, cfg) else guess_type(fn, relr))
-            rtype = TYPE_FROM_KO.get(rtype, rtype)
+            rtype = meta.get("type") or (DRAFT_TYPE if is_draft(relr, cfg) else guess_type(fn, relr))
             items.append(OrderedDict([
                 ("title", title),
                 ("path", rel),
@@ -259,18 +252,23 @@ UNSAFE = {"%": "%25", " ": "%20", "(": "%28", ")": "%29", "#": "%23", "?": "%3F"
 
 
 def url_path(path):
-    """Markdown 링크를 깨뜨리는 문자만 이스케이프한다. 한글·한자는 눈으로 대조할 수 있게 그대로 둔다."""
+    """Markdown 링크를 깨뜨리는 문자만 이스케이프한다. 한글은 눈으로 대조할 수 있게 그대로 둔다."""
     return "".join(UNSAFE.get(c, c) for c in path)
 
 
+def link_text(text):
+    """Markdown 링크·표를 깨뜨리는 문자를 무해한 문자로 바꾼다."""
+    return text.replace("[", "(").replace("]", ")").replace("|", "¦")
+
+
 def md_link(text, path):
-    text = text.replace("[", "〔").replace("]", "〕").replace("|", "丨")
+    text = link_text(text)
     return "[%s](%s)" % (text, url_path(path.replace("reports/", "", 1)))
 
 
 def published(items):
     """사람이 읽는 색인에는 완성 보고서만 싣는다. 초안·증빙·감사 등 중간 산출물은 index.json에만 남긴다."""
-    return [i for i in items if i["type"] != "底稿"]
+    return [i for i in items if i["type"] != DRAFT_TYPE]
 
 
 def render(items, cfg):
@@ -288,7 +286,7 @@ def render(items, cfg):
     L.append("> 완성 보고서만 싣는다. 증빙·감사·재계산·초안 등 중간 산출물은 여기에 없으며 전체 목록은 `index.json`에 있다.")
     L.append("")
     L.append("**보고서 %d건** · **기업 %d곳** · **테마 %d개** · 최근 업데이트 %s" % (
-        len(items), len(by_bucket["公司"]), len(by_bucket["专题"]), latest or "—"))
+        len(items), len(by_bucket[B_COMPANY]), len(by_bucket[B_THEME]), latest or "—"))
     L.append("")
     L.append("[최근 업데이트](#최근-업데이트) · [기업별](#기업별) · [테마 연구](#테마-연구) · "
              "[대가 연구](#대가-연구) · [스크리닝 풀](#스크리닝-풀)")
@@ -303,7 +301,7 @@ def render(items, cfg):
     seen = defaultdict(int)
     shown = []
     for it in items:
-        if it["bucket"] == "筛选池":
+        if it["bucket"] == B_SCREEN:
             continue
         key = it["group"] + "/" + (it["series"] or "")
         if seen[key] >= 3:
@@ -315,7 +313,7 @@ def render(items, cfg):
     for it in shown:
         L.append("| %s | %s | %s | %s |" % (
             it["date"] or "—", md_link(it["title"], it["path"]),
-            display_name(it["group"]), type_label(it["type"])))
+            display_name(it["group"]), it["type"]))
     L.append("")
     L.append("---")
     L.append("")
@@ -347,18 +345,18 @@ def render(items, cfg):
                 elif not it["series"] and cur_series is not None:
                     cur_series = None
                     L.append("")
-                L.append("- `%s` %s — %s" % (it["date"] or "  —  ", md_link(it["title"], it["path"]), type_label(it["type"])))
+                L.append("- `%s` %s — %s" % (it["date"] or "  —  ", md_link(it["title"], it["path"]), it["type"]))
             L.append("")
             L.append("</details>")
             L.append("")
         L.append("---")
         L.append("")
 
-    section("기업별", "公司")
-    section("테마 연구", "专题")
-    section("대가 연구", "大师研究")
+    section("기업별", B_COMPANY)
+    section("테마 연구", B_THEME)
+    section("대가 연구", B_MASTER)
 
-    screens = by_bucket.get("筛选池", {})
+    screens = by_bucket.get(B_SCREEN, {})
     if screens:
         L.append("## 스크리닝 풀")
         L.append("")
@@ -385,10 +383,10 @@ def index_stats(items):
     items = published(items)
     groups = defaultdict(set)
     for it in items:
-        if it["bucket"] != "筛选池":
+        if it["bucket"] != B_SCREEN:
             groups[it["bucket"]].add(it["group"])
     latest = max((i["date"] for i in items if i["date"]), default="—")
-    return len(items), len(groups["公司"]), len(groups["专题"]), latest
+    return len(items), len(groups[B_COMPANY]), len(groups[B_THEME]), latest
 
 
 def root_banner_block(items):
@@ -407,10 +405,10 @@ def root_banner_block(items):
 def root_readme_block(items):
     """루트 README의 연구 색인 입구 블록을 만든다."""
     total, companies, themes, latest = index_stats(items)
-    fresh = [i for i in published(items) if i["bucket"] != "筛选池"][:8]
+    fresh = [i for i in published(items) if i["bucket"] != B_SCREEN][:8]
 
     L = [MARK_START, ""]
-    L.append("**📊 [전체 연구 색인 →](reports/README.md)** ｜ 보고서 %d건 · 기업 %d곳 · 테마 %d개 · 최근 업데이트 %s"
+    L.append("**📊 [전체 연구 색인 →](reports/README.md)** | 보고서 %d건 · 기업 %d곳 · 테마 %d개 · 최근 업데이트 %s"
              % (total, companies, themes, latest))
     L.append("")
     L.append("최근 업데이트:")
@@ -426,7 +424,7 @@ def root_readme_block(items):
         rows += 1
         L.append("| %s | [%s](%s) | %s |" % (
             it["date"] or "—",
-            it["title"].replace("[", "〔").replace("]", "〕").replace("|", "丨"),
+            link_text(it["title"]),
             url_path(it["path"]), display_name(it["group"])))
         if rows >= 6:
             break

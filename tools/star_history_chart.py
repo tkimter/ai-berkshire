@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-"""生成与 star-history.com 完全同款的 star 增长曲线 SVG（浅色/深色两版）。
+"""star-history.com 과 완전히 같은 모양의 star 증가 곡선 SVG 를 생성한다(라이트/다크 두 버전).
 
-背景：GitHub 已将 stargazers 数据限制为仓库管理员/协作者可读，star-history.com
-等第三方图表服务无法再匿名获取数据，README 里的外链图表因此失效。本脚本用
-本仓库自己的令牌拉取数据，按 star-history 开源渲染器（star-history/star-history
-仓库 shared/packages/xy-chart.tsx 及 utils/）逐项复刻其 SVG 输出：xkcd 手绘滤镜、
-monotone 曲线、嵌入字体、标题带仓库头像、左上图例、右下水印。
+배경: GitHub 가 stargazers 데이터를 저장소 관리자/협업자만 읽을 수 있게 제한하면서 star-history.com
+같은 서드파티 차트 서비스가 익명으로 데이터를 가져올 수 없게 됐고, README 의 외부 링크 차트가
+깨졌다. 이 스크립트는 저장소 자체 토큰으로 데이터를 가져와 star-history 오픈소스 렌더러
+(star-history/star-history 저장소의 shared/packages/xy-chart.tsx 및 utils/)의 SVG 출력을
+항목별로 재현한다: xkcd 손그림 필터, monotone 곡선, 내장 폰트, 저장소 아바타가 붙은 제목,
+좌상단 범례, 우하단 워터마크.
 
-数据来源：GitHub REST API stargazers（Accept: application/vnd.github.star+json
-带 starred_at 时间戳），按页均匀采样（每页 100 条，取每页首条时间戳即可精确
-还原累计曲线）。
+데이터 출처: GitHub REST API stargazers(Accept: application/vnd.github.star+json,
+starred_at 타임스탬프 포함). 페이지 단위로 균등 샘플링한다(페이지당 100건, 각 페이지 첫 건의
+타임스탬프만으로 누적 곡선을 정확히 복원할 수 있다).
 
-用法：
+사용법:
     GITHUB_TOKEN=$(gh auth token) python3 tools/star_history_chart.py
 
-依赖素材（提取自 star-history 开源仓库，随本仓库提交）：
-    tools/xkcd.woff              — xkcd 手写字体
-    tools/star-history-logo.png  — 右下角水印图标
+필요한 소재(star-history 오픈소스 저장소에서 추출, 이 저장소에 함께 커밋):
+    tools/xkcd.woff              — xkcd 손글씨 폰트
+    tools/star-history-logo.png  — 우하단 워터마크 아이콘
 
-输出：assets/star-history.svg 和 assets/star-history-dark.svg
+출력: assets/star-history.svg 와 assets/star-history-dark.svg
 """
 
 import base64
@@ -32,12 +33,12 @@ from pathlib import Path
 
 REPO = "xbtlin/ai-berkshire"
 API = "https://api.github.com"
-MAX_SAMPLE_PAGES = 36  # 采样页数上限，曲线平滑度足够且请求量可控
+MAX_SAMPLE_PAGES = 36  # 샘플링 페이지 수 상한. 곡선이 충분히 매끄럽고 요청량도 통제 가능
 
-# 布局与配色常量全部取自 star-history 渲染器源码
+# 레이아웃·배색 상수는 모두 star-history 렌더러 소스에서 가져왔다
 WIDTH = 800
 HEIGHT = 800 * 2 / 3
-M_TOP, M_RIGHT, M_BOTTOM, M_LEFT = 60, 30, 50, 70  # 有标题时 top=60
+M_TOP, M_RIGHT, M_BOTTOM, M_LEFT = 60, 30, 50, 70  # 제목이 있을 때 top=60
 CHART_W = WIDTH - M_LEFT - M_RIGHT
 CHART_H = HEIGHT - M_TOP - M_BOTTOM
 
@@ -68,7 +69,7 @@ def fetch_points():
     repo = gh_get(f"/repos/{REPO}")
     total = repo["stargazers_count"]
     if total == 0:
-        sys.exit("仓库没有 star，无需生成图表")
+        sys.exit("저장소에 star 가 없어 차트를 생성할 필요가 없습니다")
 
     last_page = math.ceil(total / 100)
     n = min(last_page, MAX_SAMPLE_PAGES)
@@ -85,9 +86,9 @@ def fetch_points():
             points.append((t, (p - 1) * 100 + 1))
     points.append((datetime.now(timezone.utc), total))
     points.sort()
-    # star-history 的 insertZeroPoint：首个 star 前一天补零点
+    # star-history 의 insertZeroPoint: 첫 star 하루 전에 0 지점을 추가
     points.insert(0, (points[0][0] - timedelta(days=1), 0))
-    # x 必须严格递增（monotone 曲线要求），去掉同时刻的重复采样
+    # x 는 엄격히 증가해야 한다(monotone 곡선의 요건). 같은 시각의 중복 샘플을 제거
     dedup = [points[0]]
     for t, v in points[1:]:
         if t > dedup[-1][0]:
@@ -96,7 +97,7 @@ def fetch_points():
 
 
 def fmt(x):
-    """模拟 JS 数字序列化：整数不带小数点，浮点全精度。"""
+    """JS 숫자 직렬화를 흉내 낸다: 정수는 소수점 없이, 부동소수는 전체 정밀도로."""
     if isinstance(x, float) and x.is_integer():
         return str(int(x))
     return repr(x) if isinstance(x, float) else str(x)
@@ -107,7 +108,7 @@ def sign(x):
 
 
 def monotone_x_path(pts):
-    """复刻 d3-shape curveMonotoneX 的贝塞尔路径输出。"""
+    """d3-shape curveMonotoneX 의 베지어 경로 출력을 재현한다."""
 
     def slope3(x0, y0, x1, y1, x2, y2):
         h0, h1 = x1 - x0, x2 - x1
@@ -145,7 +146,7 @@ def monotone_x_path(pts):
 
 
 def linear_ticks(stop, count=5):
-    """复刻 d3.ticks(0, stop, count)。"""
+    """d3.ticks(0, stop, count) 를 재현한다."""
     step = stop / count
     power = math.floor(math.log10(step))
     error = step / 10 ** power
@@ -155,7 +156,7 @@ def linear_ticks(stop, count=5):
 
 
 def time_ticks(t0, t1, count=5):
-    """复刻 d3 scaleTime.ticks：按跨度选择 天/2天/周/月/3月/年 间隔。"""
+    """d3 scaleTime.ticks 를 재현한다: 구간 길이에 따라 일/2일/주/월/3개월/연 간격을 고른다."""
     span = (t1 - t0).total_seconds() * 1000
     target = span / count
     day = 864e5
@@ -192,7 +193,7 @@ def time_ticks(t0, t1, count=5):
             if t >= t0:
                 ticks.append(t)
     elif unit == "week":
-        # d3 timeWeek 以周日为界
+        # d3 timeWeek 는 일요일을 경계로 한다
         start = (t0 + timedelta(days=(6 - t0.weekday()) % 7 or 7)).replace(
             hour=0, minute=0, second=0, microsecond=0)
         t = start
@@ -210,7 +211,7 @@ def time_ticks(t0, t1, count=5):
 
 
 def time_tick_label(t):
-    """复刻 d3 默认时间多级格式：年首→%Y，月首→%B，周日→%b %d，其余→%a %d。"""
+    """d3 기본 시간 다단계 형식을 재현한다: 연초→%Y, 월초→%B, 일요일→%b %d, 그 외→%a %d."""
     if t.month == 1 and t.day == 1:
         return str(t.year)
     if t.day == 1:
@@ -221,7 +222,7 @@ def time_tick_label(t):
 
 
 def number_tick_label(v, unit):
-    """复刻 star-history getFormatNumber。"""
+    """star-history getFormatNumber 를 재현한다."""
     if unit == 1:
         return fmt(float(v))
     div, suffix = (1e6, "M") if unit == 1000000 else (1e3, "K")
@@ -242,7 +243,7 @@ def render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime):
 
     stroke, bg, line_color = theme["stroke"], theme["bg"], theme["line"]
 
-    # X 轴（d3 axisBottom, tickSize 0, tickPadding 6, 刻度位置 +0.5）
+    # X 축(d3 axisBottom, tickSize 0, tickPadding 6, 눈금 위치 +0.5)
     xticks = "".join(
         f'<g class="tick" opacity="1" transform="translate({fmt(x(t) + 0.5)},0)">'
         f'<line stroke="currentColor" y2="0"></line>'
@@ -257,7 +258,7 @@ def render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime):
         f'filter="url(#xkcdify)" style="stroke: {stroke};"></path>{xticks}</g>'
     )
 
-    # Y 轴（d3 axisLeft, tickSize 1, tickPadding 6；0 刻度显示空格）
+    # Y 축(d3 axisLeft, tickSize 1, tickPadding 6. 0 눈금은 공백으로 표시)
     yvals = linear_ticks(total)
     first = next(v for v in yvals if v)
     unit = 1000000 if first >= 1000000 else 1000 if first >= 300 else 1
@@ -279,7 +280,7 @@ def render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime):
     line = (f'<path class="xkcd-chart-xyline" d="{line_path}" fill="none" '
             f'stroke="{line_color}" filter="url(#xkcdify)"></path>')
 
-    # 图例（左上）：宽度公式取自 drawLegend
+    # 범례(좌상단): 너비 공식은 drawLegend 에서 가져왔다
     L = len(REPO)
     legend_w = max(L * 7.5 + 8 + 7 + 14, L * 7 + 8 + 14 + 6)
     legend = (
@@ -306,7 +307,7 @@ def render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime):
         f'<text style="font-size: 15px; font-weight: bold; fill: {stroke};" x="15" y="25"></text></svg>'
     )
 
-    # 标题 + 仓库头像（clipX = 800*0.5-73, logoX = 800*0.5-84）
+    # 제목 + 저장소 아바타(clipX = 800*0.5-73, logoX = 800*0.5-84)
     title = (
         f'<text style="font-size: 20px; font-weight: bold; fill: {stroke};" x="50%" y="30" '
         f'text-anchor="middle">Star History</text>'
@@ -316,7 +317,7 @@ def render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime):
         f'href="data:{avatar_mime};base64,{avatar_b64}" clip-path="url(#clip-circle-title)"></image>'
     )
 
-    # Y 轴标签偏移：取自 xy-chart 按最大值分档
+    # Y 축 라벨 오프셋: xy-chart 의 최댓값 구간별 값을 따른다
     offset_y = 2 if total > 100000 else 8 if total > 10000 else 12 if total > 1000 else 20 if total > 100 else 24
     label_x = math.floor(100 / 2 - HEIGHT / 2)
     labels = (
@@ -359,7 +360,7 @@ def main():
         path = out_dir / f"star-history{suffix}.svg"
         path.write_text(render(points, total, theme, font_b64, logo_b64, avatar_b64, avatar_mime),
                         encoding="utf-8")
-        print(f"已生成 {path}（{total:,} stars，{len(points)} 个采样点）")
+        print(f"생성 완료 {path} ({total:,} stars, 샘플 지점 {len(points)}개)")
 
 
 if __name__ == "__main__":

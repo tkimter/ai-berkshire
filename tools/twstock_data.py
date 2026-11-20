@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""台股数据工具 — FinMind 开放数据 API，零外部依赖（仅 stdlib）。
+"""대만 주식 데이터 도구 — FinMind 오픈 데이터 API, 외부 의존성 없음(stdlib만 사용).
 
-为 Claude Code Skills 提供台股行情、估值、财务、月营收等数据。
-设计原则：独立模块，不影响现有工具；与 ashare_data.py 同风格。
+Claude Code Skills 에 대만 주식 시세, 밸류에이션, 재무, 월 매출 등을 제공한다.
+설계 원칙: 독립 모듈로 기존 도구에 영향을 주지 않는다. ashare_data.py 와 같은 스타일.
 
-数据源：FinMind (api.finmindtrade.com)，覆盖上市(twse)/上柜(tpex)全部股票。
-未注册可直接使用（有小时级请求限额）。注册后的 API token 可提升额度，
-按以下优先级读取（token 只存本机，严禁提交到 git）：
-    1. 环境变量 FINMIND_TOKEN
-    2. 本地文件 local/finmind_token.txt（local/ 目录已被 .gitignore 永久排除）
+데이터 출처: FinMind (api.finmindtrade.com). 상장(twse)/장외(tpex, 上櫃) 전 종목을 다룬다.
+가입 없이 바로 쓸 수 있다(시간당 요청 한도 있음). 가입 후 받는 API token 으로 한도를 늘릴 수 있으며,
+아래 우선순위로 읽는다(token 은 로컬에만 두고 git 에 절대 커밋하지 않는다):
+    1. 환경 변수 FINMIND_TOKEN
+    2. 로컬 파일 local/finmind_token.txt (local/ 디렉터리는 .gitignore 로 영구 제외됨)
 
-用法（由 Skills 自动调用）：
-    python3 tools/twstock_data.py quote 2330        # 最新行情 + 估值 + 市值验算
-    python3 tools/twstock_data.py valuation 2330    # PER/PBR/殖利率 + 52周高低
-    python3 tools/twstock_data.py financials 2330   # 近5年年度核心财务 + 最新季度
-    python3 tools/twstock_data.py revenue 2330      # 近13个月月营收及同比（台股独有月度披露）
-    python3 tools/twstock_data.py dividend 2330     # 近年股利政策
-    python3 tools/twstock_data.py search 台積        # 搜索股票代码（支持繁体/代码）
+사용법(Skills 가 자동 호출):
+    python3 tools/twstock_data.py quote 2330        # 최신 시세 + 밸류에이션 + 시가총액 검산
+    python3 tools/twstock_data.py valuation 2330    # PER/PBR/배당수익률 + 52주 고저
+    python3 tools/twstock_data.py financials 2330   # 최근 5년 연간 핵심 재무 + 최신 분기
+    python3 tools/twstock_data.py revenue 2330      # 최근 13개월 월 매출 및 전년 동기 대비(대만 주식 고유의 월간 공시)
+    python3 tools/twstock_data.py dividend 2330     # 최근 수년 배당 정책
+    python3 tools/twstock_data.py search 台積        # 종목 코드 검색(번체 종목명/코드 지원, 台積=TSMC)
 
-注意：
-    - 所有金额单位为新台币（TWD）
-    - FinMind 损益表为单季值，本工具已自动加总为年度值
-    - 需要 Python >= 3.8，零外部依赖
+주의:
+    - 모든 금액 단위는 신타이완달러(TWD)
+    - FinMind 손익계산서는 단일 분기 값이며, 이 도구가 자동으로 연간 값으로 합산한다
+    - Python >= 3.8 필요, 외부 의존성 없음
 """
 
 import argparse
@@ -40,8 +40,21 @@ _TOKEN_FILE = os.path.join(
 )
 
 
+def _safe_stdio():
+    """콘솔 인코딩(예: Windows cp949)으로 표현할 수 없는 문자(이모지·일부 한자) 때문에 죽지 않게 한다."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream.isatty() or os.environ.get("PYTHONIOENCODING"):
+                stream.reconfigure(errors="replace")
+            else:
+                # 파이프·리다이렉트 출력은 UTF-8 로 고정한다(중국어 종목명·기호가 '?' 로 뭉개지지 않게)
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def _token():
-    """读取 FinMind token：环境变量优先，其次本地文件；都没有则匿名访问。"""
+    """FinMind token 을 읽는다: 환경 변수 우선, 다음은 로컬 파일. 둘 다 없으면 익명 접근."""
     t = os.environ.get("FINMIND_TOKEN", "").strip()
     if t:
         return t
@@ -53,7 +66,7 @@ def _token():
 
 
 def _get(dataset, data_id=None, start_date=None, end_date=None):
-    """请求 FinMind API，返回 data 列表。"""
+    """FinMind API 를 호출해 data 리스트를 반환한다."""
     params = {"dataset": dataset}
     if data_id:
         params["data_id"] = data_id
@@ -72,20 +85,20 @@ def _get(dataset, data_id=None, start_date=None, end_date=None):
     except urllib.error.HTTPError as e:
         if e.code in (400, 401, 402, 403) and token:
             raise ConnectionError(
-                f"FinMind 拒绝请求（HTTP {e.code}），大概率是 token 无效或过期。"
-                "请检查环境变量 FINMIND_TOKEN 或 local/finmind_token.txt 的内容；"
-                "删除 token 可退回匿名访问（有小时级限额）"
+                f"FinMind 가 요청을 거부했습니다(HTTP {e.code}). token 이 무효이거나 만료됐을 가능성이 큽니다. "
+                "환경 변수 FINMIND_TOKEN 또는 local/finmind_token.txt 내용을 확인하세요. "
+                "token 을 지우면 익명 접근으로 돌아갑니다(시간당 한도 있음)"
             ) from e
-        raise ConnectionError(f"FinMind 请求失败: HTTP {e.code} ({dataset})") from e
+        raise ConnectionError(f"FinMind 요청 실패: HTTP {e.code} ({dataset})") from e
     except urllib.error.URLError as e:
-        raise ConnectionError(f"FinMind 网络请求失败: {e.reason}") from e
+        raise ConnectionError(f"FinMind 네트워크 요청 실패: {e.reason}") from e
     if payload.get("status") != 200:
-        raise ConnectionError(f"FinMind 请求失败: {payload.get('msg')} ({dataset})")
+        raise ConnectionError(f"FinMind 요청 실패: {payload.get('msg')} ({dataset})")
     return payload.get("data", [])
 
 
 def _fmt_yi(value):
-    """新台币金额格式化为 亿/万。"""
+    """신타이완달러 금액을 억/만 단위로 표시한다."""
     if value is None or value == "":
         return "-"
     try:
@@ -93,9 +106,9 @@ def _fmt_yi(value):
     except (ValueError, TypeError):
         return str(value)
     if abs(v) >= 1e8:
-        return f"{v / 1e8:,.1f}亿"
+        return f"{v / 1e8:,.1f}억"
     if abs(v) >= 1e4:
-        return f"{v / 1e4:,.1f}万"
+        return f"{v / 1e4:,.1f}만"
     return f"{v:,.2f}"
 
 
@@ -103,20 +116,24 @@ def _days_ago(n):
     return (date.today() - timedelta(days=n)).isoformat()
 
 
+# FinMind 의 type 값(twse/tpex) → 표시용 시장 구분
+_BOARD = {"twse": "상장", "tpex": "장외(上櫃)"}
+
+
 def _stock_name(stock_id):
-    """从 TaiwanStockInfo 取股票名称与板块。"""
+    """TaiwanStockInfo 에서 종목명과 시장 구분을 가져온다."""
     try:
         rows = _get("TaiwanStockInfo", data_id=stock_id)
     except Exception:
         return stock_id, ""
     if not rows:
         return stock_id, ""
-    board = {"twse": "上市", "tpex": "上柜"}.get(rows[0].get("type", ""), "")
+    board = _BOARD.get(rows[0].get("type", ""), "")
     return rows[0].get("stock_name", stock_id), board
 
 
 def _latest_shares(stock_id):
-    """从 TaiwanStockShareholding 取最新发行股数。"""
+    """TaiwanStockShareholding 에서 최신 발행주식수를 가져온다."""
     rows = _get("TaiwanStockShareholding", data_id=stock_id, start_date=_days_ago(14))
     if not rows:
         return None
@@ -124,15 +141,15 @@ def _latest_shares(stock_id):
 
 
 # ---------------------------------------------------------------------------
-# 命令实现
+# 명령 구현
 # ---------------------------------------------------------------------------
 
 def cmd_quote(stock_id):
-    """最新行情快照 + 市值验算。"""
+    """최신 시세 스냅샷 + 시가총액 검산."""
     name, board = _stock_name(stock_id)
     prices = _get("TaiwanStockPrice", data_id=stock_id, start_date=_days_ago(14))
     if not prices:
-        print(f"❌ 未找到股票 {stock_id} 的行情数据")
+        print(f"❌ 종목 {stock_id} 의 시세 데이터를 찾지 못했습니다")
         return
     p = prices[-1]
     prev_close = prices[-2]["close"] if len(prices) >= 2 else None
@@ -141,38 +158,38 @@ def cmd_quote(stock_id):
     per = pers[-1] if pers else {}
 
     print("=" * 60)
-    print(f"台股行情: {name} ({stock_id}) [{board}]  数据源: FinMind")
+    print(f"대만 주식 시세: {name} ({stock_id}) [{board}]  데이터 출처: FinMind")
     print("=" * 60)
-    print(f"  日期:       {p['date']}")
-    print(f"  收盘价:     {p['close']} 新台币")
+    print(f"  날짜:         {p['date']}")
+    print(f"  종가:         {p['close']} TWD")
     if prev_close:
         chg = p["close"] - prev_close
-        print(f"  涨跌:       {chg:+.2f} ({chg / prev_close * 100:+.2f}%)")
-    print(f"  开/高/低:   {p['open']} / {p['max']} / {p['min']}")
-    print(f"  成交量:     {_fmt_yi(p['Trading_Volume'])}股")
-    print(f"  成交额:     {_fmt_yi(p['Trading_money'])}新台币")
+        print(f"  등락:         {chg:+.2f} ({chg / prev_close * 100:+.2f}%)")
+    print(f"  시/고/저:     {p['open']} / {p['max']} / {p['min']}")
+    print(f"  거래량:       {_fmt_yi(p['Trading_Volume'])}주")
+    print(f"  거래대금:     {_fmt_yi(p['Trading_money'])} TWD")
     if per:
-        print(f"  PER:        {per.get('PER', '-')}")
-        print(f"  PBR:        {per.get('PBR', '-')}")
-        print(f"  殖利率:     {per.get('dividend_yield', '-')}%")
+        print(f"  PER:          {per.get('PER', '-')}")
+        print(f"  PBR:          {per.get('PBR', '-')}")
+        print(f"  배당수익률:   {per.get('dividend_yield', '-')}%")
 
-    # 市值验算：收盘价 × 发行股数
+    # 시가총액 검산: 종가 × 발행주식수
     try:
         shares = _latest_shares(stock_id)
         if shares:
             cap = p["close"] * shares
-            print(f"\n  发行股数:   {_fmt_yi(shares)}股")
-            print(f"  总市值:     {_fmt_yi(cap)}新台币（= 收盘 {p['close']} × 股数，手算口径）")
+            print(f"\n  발행주식수:   {_fmt_yi(shares)}주")
+            print(f"  시가총액:     {_fmt_yi(cap)} TWD (= 종가 {p['close']} × 주식수, 수기 계산 기준)")
     except Exception:
-        print("\n  ⚠️ 发行股数获取失败，市值请另行验算")
+        print("\n  ⚠️ 발행주식수를 가져오지 못했습니다. 시가총액은 따로 검산하세요")
 
 
 def cmd_valuation(stock_id):
-    """估值指标 + 52周高低。"""
+    """밸류에이션 지표 + 52주 고저."""
     name, board = _stock_name(stock_id)
     prices = _get("TaiwanStockPrice", data_id=stock_id, start_date=_days_ago(370))
     if not prices:
-        print(f"❌ 未找到股票 {stock_id} 的行情数据")
+        print(f"❌ 종목 {stock_id} 의 시세 데이터를 찾지 못했습니다")
         return
     p = prices[-1]
     high_52w = max(r["max"] for r in prices)
@@ -183,47 +200,48 @@ def cmd_valuation(stock_id):
     per_vals = [r["PER"] for r in pers if r.get("PER")]
 
     print("=" * 60)
-    print(f"估值指标: {name} ({stock_id}) [{board}]  数据源: FinMind")
+    print(f"밸류에이션 지표: {name} ({stock_id}) [{board}]  데이터 출처: FinMind")
     print("=" * 60)
-    print(f"  日期:       {p['date']}")
-    print(f"  收盘价:     {p['close']} 新台币")
-    print(f"  PER:        {per.get('PER', '-')}")
+    print(f"  날짜:         {p['date']}")
+    print(f"  종가:         {p['close']} TWD")
+    print(f"  PER:          {per.get('PER', '-')}")
     if per_vals:
-        print(f"  PER一年区间: {min(per_vals)} ~ {max(per_vals)}")
-    print(f"  PBR:        {per.get('PBR', '-')}")
-    print(f"  殖利率:     {per.get('dividend_yield', '-')}%")
-    print(f"  52周最高:   {high_52w}")
-    print(f"  52周最低:   {low_52w}")
+        print(f"  PER 1년 구간: {min(per_vals)} ~ {max(per_vals)}")
+    print(f"  PBR:          {per.get('PBR', '-')}")
+    print(f"  배당수익률:   {per.get('dividend_yield', '-')}%")
+    print(f"  52주 최고:    {high_52w}")
+    print(f"  52주 최저:    {low_52w}")
 
     try:
         shares = _latest_shares(stock_id)
         if shares:
             cap = p["close"] * shares
-            print(f"  发行股数:   {_fmt_yi(shares)}股")
-            print(f"  总市值:     {_fmt_yi(cap)}新台币")
+            print(f"  발행주식수:   {_fmt_yi(shares)}주")
+            print(f"  시가총액:     {_fmt_yi(cap)} TWD")
     except Exception:
         pass
 
 
+# FinMind 손익계산서 type 값 → 한국어 항목명
 _IS_KEYS = {
-    "Revenue": "营收",
-    "GrossProfit": "毛利",
-    "OperatingIncome": "营业利益",
-    "EquityAttributableToOwnersOfParent": "归母净利",
+    "Revenue": "매출",
+    "GrossProfit": "매출총이익",
+    "OperatingIncome": "영업이익",
+    "EquityAttributableToOwnersOfParent": "지배주주 순이익",
     "EPS": "EPS",
 }
 
 
 def cmd_financials(stock_id):
-    """近5年年度核心财务（单季加总）+ 年末权益推算 ROE。"""
+    """최근 5년 연간 핵심 재무(단일 분기 합산) + 연말 자본으로 추산한 ROE."""
     name, board = _stock_name(stock_id)
     start = f"{date.today().year - 5}-01-01"
     rows = _get("TaiwanStockFinancialStatements", data_id=stock_id, start_date=start)
     if not rows:
-        print(f"❌ 未找到股票 {stock_id} 的财务数据")
+        print(f"❌ 종목 {stock_id} 의 재무 데이터를 찾지 못했습니다")
         return
 
-    # 按年份聚合单季值：{year: {指标: 累计值}}，并记录季度数
+    # 연도별로 단일 분기 값을 합산: {year: {지표: 누계}}, 분기 수도 기록
     years = {}
     for r in rows:
         if r["type"] not in _IS_KEYS:
@@ -233,7 +251,7 @@ def cmd_financials(stock_id):
         d["_quarters"].add(r["date"])
         d[r["type"]] = d.get(r["type"], 0) + (r["value"] or 0)
 
-    # 年末归母权益（Q4 资产负债表），用于简化 ROE
+    # 연말 지배주주 자본(Q4 재무상태표). 간이 ROE 계산에 쓴다
     equity_by_year = {}
     try:
         bs = _get("TaiwanStockBalanceSheet", data_id=stock_id, start_date=start)
@@ -244,52 +262,52 @@ def cmd_financials(stock_id):
         pass
 
     print("=" * 60)
-    print(f"核心财务数据: {name} ({stock_id}) [{board}]  数据源: FinMind")
+    print(f"핵심 재무 데이터: {name} ({stock_id}) [{board}]  데이터 출처: FinMind")
     print("=" * 60)
-    print("  单位：新台币。FinMind 损益表为单季值，以下为年度加总。")
+    print("  단위: TWD. FinMind 손익계산서는 단일 분기 값이며, 아래는 연간 합산이다.")
 
     for y in sorted(years, reverse=True):
         d = years[y]
         nq = len(d["_quarters"])
-        suffix = "" if nq == 4 else f"（仅前{nq}季累计，非全年）"
+        suffix = "" if nq == 4 else f"(앞 {nq}개 분기 누계만, 연간 아님)"
         rev = d.get("Revenue")
         gp = d.get("GrossProfit")
         op = d.get("OperatingIncome")
         ni = d.get("EquityAttributableToOwnersOfParent")
         eps = d.get("EPS")
-        print(f"\n  --- {y}年 {suffix} ---")
+        print(f"\n  --- {y}년 {suffix} ---")
         if rev:
-            print(f"  营收:       {_fmt_yi(rev)}")
+            print(f"  매출:             {_fmt_yi(rev)}")
         if gp and rev:
-            print(f"  毛利率:     {gp / rev * 100:.1f}%")
+            print(f"  매출총이익률:     {gp / rev * 100:.1f}%")
         if op and rev:
-            print(f"  营业利益率: {op / rev * 100:.1f}%")
+            print(f"  영업이익률:       {op / rev * 100:.1f}%")
         if ni:
-            print(f"  归母净利:   {_fmt_yi(ni)}")
+            print(f"  지배주주 순이익:  {_fmt_yi(ni)}")
         if ni and rev:
-            print(f"  净利率:     {ni / rev * 100:.1f}%")
+            print(f"  순이익률:         {ni / rev * 100:.1f}%")
         if eps:
-            print(f"  EPS:        {eps:.2f}")
+            print(f"  EPS:              {eps:.2f}")
         eq = equity_by_year.get(y)
         if eq and ni and nq == 4:
-            print(f"  ROE(简化):  {ni / eq * 100:.1f}%（归母净利/年末归母权益，非期初期末平均）")
+            print(f"  ROE(간이):        {ni / eq * 100:.1f}% (지배주주 순이익/연말 지배주주 자본, 기초·기말 평균 아님)")
 
 
 def cmd_revenue(stock_id):
-    """近13个月月营收及同比——台股独有的月度披露，跟踪基本面拐点。"""
+    """최근 13개월 월 매출 및 전년 동기 대비 — 대만 주식 고유의 월간 공시로 펀더멘털 변곡점을 추적한다."""
     name, board = _stock_name(stock_id)
     rows = _get("TaiwanStockMonthRevenue", data_id=stock_id, start_date=_days_ago(800))
     if not rows:
-        print(f"❌ 未找到股票 {stock_id} 的月营收数据")
+        print(f"❌ 종목 {stock_id} 의 월 매출 데이터를 찾지 못했습니다")
         return
 
     by_month = {(r["revenue_year"], r["revenue_month"]): r["revenue"] for r in rows}
 
     print("=" * 60)
-    print(f"月营收: {name} ({stock_id}) [{board}]  数据源: FinMind")
+    print(f"월 매출: {name} ({stock_id}) [{board}]  데이터 출처: FinMind")
     print("=" * 60)
-    print("  单位：新台币（台股每月10日前强制披露上月营收）")
-    print(f"\n  {'月份':<10}{'营收':>14}{'同比':>10}")
+    print("  단위: TWD (대만 주식은 매월 10일 이전에 전월 매출을 의무 공시한다)")
+    print(f"\n  {'월':<10}{'매출':>14}{'전년 동기 대비':>10}")
 
     keys = sorted(by_month)[-13:]
     for y, m in keys:
@@ -300,19 +318,19 @@ def cmd_revenue(stock_id):
 
 
 def cmd_dividend(stock_id):
-    """近年股利政策。"""
+    """최근 수년 배당 정책."""
     name, board = _stock_name(stock_id)
     start = f"{date.today().year - 5}-01-01"
     rows = _get("TaiwanStockDividend", data_id=stock_id, start_date=start)
     if not rows:
-        print(f"❌ 未找到股票 {stock_id} 的股利数据")
+        print(f"❌ 종목 {stock_id} 의 배당 데이터를 찾지 못했습니다")
         return
 
     print("=" * 60)
-    print(f"股利政策: {name} ({stock_id}) [{board}]  数据源: FinMind")
+    print(f"배당 정책: {name} ({stock_id}) [{board}]  데이터 출처: FinMind")
     print("=" * 60)
-    print("  单位：新台币/股（台股常见按季配息，年度股利需自行加总）")
-    print(f"\n  {'所属期间':<12}{'现金股利':>8}{'股票股利':>8}  {'除息日':<12}{'发放日':<12}")
+    print("  단위: TWD/주 (대만 주식은 분기 배당이 흔하므로 연간 배당은 직접 합산해야 한다)")
+    print(f"\n  {'귀속 기간':<12}{'현금배당':>8}{'주식배당':>8}  {'배당락일':<12}{'지급일':<12}")
 
     for r in rows:
         cash = (r.get("CashEarningsDistribution") or 0) + (r.get("CashStatutorySurplus") or 0)
@@ -321,11 +339,12 @@ def cmd_dividend(stock_id):
             continue
         ex_date = r.get("CashExDividendTradingDate") or "-"
         pay_date = r.get("CashDividendPaymentDate") or "-"
+        # year 는 FinMind 가 돌려주는 값 그대로(민국 연호·분기 표기일 수 있음)
         print(f"  {r.get('year', ''):<12}{cash:>8.2f}{stock:>8.2f}  {ex_date:<12}{pay_date:<12}")
 
 
 def cmd_search(keyword):
-    """按名称/代码搜索台股（TaiwanStockInfo 全表过滤）。"""
+    """종목명/코드로 대만 주식을 검색한다(TaiwanStockInfo 전체 표 필터링)."""
     rows = _get("TaiwanStockInfo")
     seen = {}
     for r in rows:
@@ -342,41 +361,43 @@ def cmd_search(keyword):
                 seen[sid]["industries"].append(cat)
 
     if not seen:
-        print(f"❌ 未找到匹配 '{keyword}' 的台股（提示：台股名称多为繁体，如 台積電）")
+        # 台積電(TSMC)은 FinMind 종목명과 맞춰야 하는 검색어 예시라 번체 그대로 둔다
+        print(f"❌ '{keyword}' 와(과) 일치하는 대만 주식을 찾지 못했습니다(힌트: 대만 종목명은 대부분 번체자다. 예: 台積電)")
         return
 
     print("=" * 60)
-    print(f"台股搜索结果: '{keyword}'  数据源: FinMind")
+    print(f"대만 주식 검색 결과: '{keyword}'  데이터 출처: FinMind")
     print("=" * 60)
     for sid, d in sorted(seen.items()):
-        board = {"twse": "上市", "tpex": "上柜"}.get(d["type"], d["type"])
+        board = _BOARD.get(d["type"], d["type"])
         cats = "/".join(d["industries"][:3])
         print(f"  {sid} {d['name']} [{board}] {cats}")
 
 
 # ---------------------------------------------------------------------------
-# CLI 入口
+# CLI 진입점
 # ---------------------------------------------------------------------------
 
 def main():
+    _safe_stdio()
     parser = argparse.ArgumentParser(
-        description="台股数据工具 — FinMind 开放数据 API",
+        description="대만 주식 데이터 도구 - FinMind 오픈 데이터 API",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
 
     for cmd, help_text in [
-        ("quote", "最新行情 + 市值验算"),
-        ("valuation", "估值指标（PER/PBR/殖利率/52周高低）"),
-        ("financials", "近5年年度核心财务"),
-        ("revenue", "近13个月月营收及同比"),
-        ("dividend", "近年股利政策"),
+        ("quote", "최신 시세 + 시가총액 검산"),
+        ("valuation", "밸류에이션 지표(PER/PBR/배당수익률/52주 고저)"),
+        ("financials", "최근 5년 연간 핵심 재무"),
+        ("revenue", "최근 13개월 월 매출 및 전년 동기 대비"),
+        ("dividend", "최근 수년 배당 정책"),
     ]:
         p = sub.add_parser(cmd, help=help_text)
-        p.add_argument("stock_id", help="股票代码，如 2330")
+        p.add_argument("stock_id", help="종목 코드(예: 2330)")
 
-    p_search = sub.add_parser("search", help="搜索股票代码")
-    p_search.add_argument("keyword", help="公司名（繁体）或代码")
+    p_search = sub.add_parser("search", help="종목 코드 검색")
+    p_search.add_argument("keyword", help="회사명(번체자) 또는 코드")
 
     args = parser.parse_args()
     if not args.command:
@@ -395,8 +416,8 @@ def main():
                 "dividend": cmd_dividend,
             }[args.command](args.stock_id)
     except BrokenPipeError:
-        # 输出被管道截断（如 | head），静默退出。
-        # 注意 BrokenPipeError 是 ConnectionError 的子类，必须放在前面
+        # 출력이 파이프에서 잘린 경우(예: | head) 조용히 종료한다.
+        # 주의: BrokenPipeError 는 ConnectionError 의 하위 클래스이므로 반드시 먼저 잡아야 한다
         sys.stderr.close()
         sys.exit(0)
     except ConnectionError as e:

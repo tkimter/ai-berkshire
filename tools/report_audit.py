@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """Report Audit Tool for AI Berkshire.
 
-数据抽检工具：从研究报告中抽取15%的财务数据点，与可靠信源比对，
-通过则准出，不通过则打回并说明原因。
+데이터 표본 검사 도구: 연구 보고서에서 재무 데이터 포인트의 15%를 추출해 신뢰할 수 있는 출처와 대조한다.
+통과하면 통과 판정, 통과하지 못하면 반려하고 이유를 밝힌다.
 
 Zero external dependencies — uses only Python stdlib.
 Requires Python >= 3.7.
 
-工作流程（三步）：
-  Step 1 — 提取数据点，随机抽样15%：
+워크플로(3단계):
+  Step 1 — 데이터 포인트를 추출하고 15%를 무작위 추출:
     python3 tools/report_audit.py extract --report reports/xxx.md
 
-  Step 2 — Claude 对抽检清单中的每个数据点，从可靠信源（macrotrends/
-            stockanalysis/aastocks/eastmoney）取数，填入 fetched_value
+  Step 2 — Claude 가 표본 목록의 데이터 포인트마다 신뢰할 수 있는 출처(macrotrends/
+            stockanalysis/aastocks/eastmoney)에서 수치를 가져와 fetched_value 에 채운다
 
-  Step 3 — 输入核验结果，输出准出/打回判决：
+  Step 3 — 검증 결과를 입력해 통과/반려 판정을 출력:
     python3 tools/report_audit.py verdict --results '[...]'
 
-  一步完成（仅提取+打印抽检清单，不做网络验证）：
+  한 번에 실행(추출 + 표본 목록 출력만, 네트워크 검증 없음):
     python3 tools/report_audit.py extract --report reports/xxx.md --dry-run
 """
 
@@ -33,51 +33,61 @@ from random import Random
 _CTX = Context(prec=28, rounding=ROUND_HALF_EVEN)
 
 # ---------------------------------------------------------------------------
-# 数据点提取：从 Markdown 报告中识别财务数字
+# 데이터 포인트 추출: Markdown 보고서에서 재무 수치를 식별한다
 # ---------------------------------------------------------------------------
 
-# 匹配模式：数字 + 单位，前面有上下文标签
-# 例：收入：1,239亿元、PE 18.8x、毛利率 56%、市值 ~$5,670亿
+# 매칭 패턴: 숫자 + 단위, 앞에 문맥 라벨이 붙는다
+# 예: 매출: 1,239억 위안, PE 18.8x, 매출총이익률 56%, 시가총액 ~$5,670억
 #
-# 注意：所有数字捕获组必须带上可选符号位 _SIGN，否则 "-1.72%" 会被抓成 "1.72"，
-# 导致核验时报告值与信源值符号相反、偏差 200%，产生假打回。
-# 符号位涵盖 ASCII 正负号、Unicode 减号(U+2212)、en-dash(U+2013)、全角正负号。
+# 주의: 모든 숫자 캡처 그룹에는 선택적 부호 _SIGN 이 붙어야 한다. 그렇지 않으면 "-1.72%" 가
+# "1.72" 로 잡혀, 검증할 때 보고서 값과 출처 값의 부호가 반대가 되고 편차 200% 로 거짓 반려가 나온다.
+# 부호는 ASCII 양음 부호, Unicode 마이너스(U+2212), en-dash(U+2013), 전각 양음 부호를 포괄한다.
 _SIGN = r'[+\-−–－＋]?'
 
+# 보고서가 한국어이므로 단위는 한국어 표기를 인식한다(영어 표기는 그대로 유지).
+#   규모: 조 / 억 / 만 (앞에 천·백·십 이 붙을 수 있다: 5천억, 3백만)
+#   통화: 위안 / 홍콩달러 / 미국달러 / 달러 / 원 (+ RMB / USD / HKD / KRW)
+#   배수: x / X / 배,  백분율: %,  영어 약어: B / M / T
+_MAG = r'[천백십]?(?:조|억|만)'
+_CUR = r'(?:위안|홍콩달러|미국달러|달러|원|RMB|USD|HKD|KRW)'
+_UNIT = _MAG + r'\s*' + _CUR + r'?|' + _CUR + r'|[xX배]|%|[BMT]'
+# 숫자 앞의 어림 표시(~ / 약)와 통화 기호
+_PREFIX = r'(?:[~약]\s*)?[\$₩]?'
+
 _PATTERNS = [
-    # 百分比
+    # 백분율
     (r'(' + _SIGN + r'[\d,，\.]+)\s*%',                        '%',    'percent'),
-    # 亿元/亿美元/亿港元
-    (r'(' + _SIGN + r'[\d,，\.]+)\s*亿(元|美元|港元|RMB|USD|HKD)?', '亿',    'hundred_million'),
-    # 倍数 PE/PB/PS
-    (r'(' + _SIGN + r'[\d,，\.]+)\s*[xX倍]',                   'x',    'multiple'),
-    # 万亿
-    (r'(' + _SIGN + r'[\d,，\.]+)\s*万亿',                      '万亿', 'trillion'),
-    # 美元绝对值（B/T）
-    (r'\$\s*(' + _SIGN + r'[\d,，\.]+)\s*([BMT亿])',             '$',    'usd_abs'),
-    # 纯整数（如市值、收入、用户数等，出现在表格 | 里）
-    (r'\|\s*[~约]?\$?(' + _SIGN + r'[\d,，\.]+)\s*\|',          '',     'table_num'),
+    # 억 위안/억 달러/억 홍콩달러/억 원
+    (r'(' + _SIGN + r'[\d,，\.]+)\s*억\s*(' + _CUR + r')?',       '억',   'hundred_million'),
+    # 배수 PE/PB/PS
+    (r'(' + _SIGN + r'[\d,，\.]+)\s*[xX배]',                   'x',    'multiple'),
+    # 조
+    (r'(' + _SIGN + r'[\d,，\.]+)\s*조',                        '조',   'trillion'),
+    # 달러 절대값(B/T)
+    (r'\$\s*(' + _SIGN + r'[\d,，\.]+)\s*([BMT억조])',           '$',    'usd_abs'),
+    # 순수 숫자(시가총액, 매출, 사용자 수 등이 표의 | 안에 나오는 경우)
+    (r'\|\s*' + _PREFIX + r'(' + _SIGN + r'[\d,，\.]+)\s*\|',     '',     'table_num'),
 ]
 
 _LABEL_RE = re.compile(
-    r'(?P<label>[^\|\n：:]{2,25})[：:\s]+[~约]?\$?(?P<num>' + _SIGN + r'[\d,，\.]+)'
-    r'\s*(?P<unit>亿[元美港]?元?|万亿|[xX倍]|%|[BMT])?'
+    r'(?P<label>[^\|\n：:]{2,25})[：:\s]+' + _PREFIX + r'(?P<num>' + _SIGN + r'[\d,，\.]+)'
+    r'\s*(?P<unit>' + _UNIT + r')?'
 )
 
 _TABLE_ROW_RE = re.compile(
-    r'\|\s*(?P<label>[^|]{1,40})\s*\|\s*[~约]?\$?(?P<num>' + _SIGN + r'[\d,，\.]+)'
-    r'\s*(?P<unit>亿[元美港]?元?|万亿|[xX倍]|%|[BMT])?\s*\|'
+    r'\|\s*(?P<label>[^|]{1,40})\s*\|\s*' + _PREFIX + r'(?P<num>' + _SIGN + r'[\d,，\.]+)'
+    r'\s*(?P<unit>' + _UNIT + r')?\s*\|'
 )
 
 
 def _clean_num(s: str) -> float:
-    """把带逗号、中文逗号、各类正负号的数字字符串转为 float。
+    """쉼표, 전각 쉼표, 각종 양음 부호가 섞인 숫자 문자열을 float 로 바꾼다.
 
-    支持 ASCII '-'/'+'、Unicode 减号 '−'(U+2212)、en-dash '–'(U+2013)、
-    全角 '－'(U+FF0D)/'＋'(U+FF0B)——报告中这些符号都可能被用作正负号。
+    ASCII '-'/'+', Unicode 마이너스 '−'(U+2212), en-dash '–'(U+2013),
+    전각 '－'(U+FF0D)/'＋'(U+FF0B)를 지원한다. 보고서에서는 이 기호들이 모두 양음 부호로 쓰일 수 있다.
     """
     s = s.replace(',', '').replace('，', '').strip()
-    # 归一化各类符号为 ASCII
+    # 각종 부호를 ASCII 로 정규화
     for ch in ('−', '–', '－'):
         s = s.replace(ch, '-')
     s = s.replace('＋', '+')
@@ -88,58 +98,58 @@ def _clean_num(s: str) -> float:
 
 
 def _is_valid_label(label: str) -> bool:
-    """判断标签是否是有意义的财务字段名，过滤噪声。"""
+    """라벨이 의미 있는 재무 필드명인지 판단해 노이즈를 걸러낸다."""
     label = label.strip()
-    # 太短
+    # 너무 짧음
     if len(label) < 2:
         return False
-    # 纯数字或纯年份
-    if re.fullmatch(r'[\d\s年季度Q]+', label):
+    # 숫자뿐이거나 연도/분기뿐
+    if re.fullmatch(r'[\d\s년분기Q]+', label):
         return False
-    # 以符号/markdown标记开头
+    # 기호/markdown 표시로 시작
     if re.match(r'^[+\-\*#\|~\$>_`]', label):
         return False
-    # 含有 markdown 粗体/代码标记
+    # markdown 굵게/코드 표시 포함
     if '**' in label or '`' in label or '__' in label:
         return False
-    # 标签含有纯增速符号（如 +56%、-13% 单独作标签）
+    # 라벨이 증가율 표기뿐(+56%, -13% 가 단독으로 라벨이 된 경우)
     if re.fullmatch(r'[+\-]?\d+(\.\d+)?%', label):
         return False
-    # 常见无意义标签
-    _SKIP = {'来源', 'sources', 'source', '说明', '注意', '备注', '数据来源',
-             'n/a', '—', '-', '/', '合计', 'total', '单位', '趋势'}
+    # 흔한 무의미 라벨
+    _SKIP = {'출처', 'sources', 'source', '설명', '주의', '비고', '데이터 출처',
+             'n/a', '—', '-', '/', '합계', 'total', '단위', '추세'}
     if label.lower() in _SKIP:
         return False
     return True
 
 
-# 两列表格行：| 标签 | 数值 unit |（专为财务报告的 KV 表设计）
+# 2열 표 행: | 라벨 | 수치 unit | (재무 보고서의 KV 표 전용)
 _KV_TABLE_RE = re.compile(
-    r'^\|\s*(?P<label>[^|*\n]{2,40}?)\s*\|\s*[~约]?\$?(?P<num>' + _SIGN + r'[\d,，\.]+)\s*'
-    r'(?P<unit>亿[元美港]?元?|万亿|[xX倍]|%|[BMT亿])?\s*[\|（\(]'
+    r'^\|\s*(?P<label>[^|*\n]{2,40}?)\s*\|\s*' + _PREFIX + r'(?P<num>' + _SIGN + r'[\d,，\.]+)\s*'
+    r'(?P<unit>' + _UNIT + r')?\s*[\|（\(]'
 )
 
-# 带标签的 KV 行：标签：数值 单位
+# 라벨이 붙은 KV 행: 라벨: 수치 단위
 _KV_LABEL_RE = re.compile(
-    r'(?P<label>[\u4e00-\u9fa5A-Za-z][^\|\n：:*]{1,30})[：:]\s*[~约]?\$?'
-    r'(?P<num>' + _SIGN + r'[\d,，\.]+)\s*(?P<unit>亿[元美港]?元?|万亿|[xX倍]|%|[BMT])?'
+    r'(?P<label>[가-힣A-Za-z][^\|\n：:*]{1,30})[：:]\s*' + _PREFIX +
+    r'(?P<num>' + _SIGN + r'[\d,，\.]+)\s*(?P<unit>' + _UNIT + r')?'
 )
 
 
 def _parse_md_tables(lines: list) -> list:
-    """解析 Markdown 中所有表格，返回 (row_label, col_header, value, unit, lineno, raw) 列表。"""
+    """Markdown 의 모든 표를 파싱해 (row_label, col_header, value, unit, lineno, raw) 목록을 반환한다."""
     results = []
     i = 0
     while i < len(lines):
         line = lines[i].strip()
-        # 检测表头行（含 | 且不是分隔行）
+        # 표 머리행 감지(| 를 포함하고 구분행이 아님)
         if '|' in line and not re.match(r'^\|[\-\s\|:]+\|$', line):
             headers_raw = [h.strip().strip('*_').strip() for h in line.split('|')]
             headers_raw = [h for h in headers_raw if h]
-            # 下一行应是分隔行
+            # 다음 행은 구분행이어야 한다
             if i + 1 < len(lines) and re.match(r'^\|[\-\s\|:]+\|$', lines[i+1].strip()):
-                i += 2  # 跳过分隔行
-                # 读数据行
+                i += 2  # 구분행 건너뛰기
+                # 데이터 행 읽기
                 while i < len(lines):
                     dline = lines[i].strip()
                     if not dline or not dline.startswith('|'):
@@ -151,11 +161,11 @@ def _parse_md_tables(lines: list) -> list:
                         continue
                     row_label = cells[0]
                     for col_idx, cell in enumerate(cells[1:], start=1):
-                        col_header = headers_raw[col_idx] if col_idx < len(headers_raw) else f'列{col_idx}'
-                        # 提取 cell 中的数字+单位
+                        col_header = headers_raw[col_idx] if col_idx < len(headers_raw) else f'열{col_idx}'
+                        # cell 안의 숫자+단위 추출
                         m = re.search(
-                            r'[~约]?\$?(' + _SIGN + r'[\d,，\.]+)\s*'
-                            r'(亿[元美港]?元?|万亿|[xX倍]|%|[BMT])?',
+                            _PREFIX + r'(' + _SIGN + r'[\d,，\.]+)\s*'
+                            r'(' + _UNIT + r')?',
                             cell
                         )
                         if m:
@@ -170,14 +180,14 @@ def _parse_md_tables(lines: list) -> list:
 
 
 def extract_data_points(md_text: str) -> list:
-    """从 Markdown 报告中提取所有可识别的财务数据点。
+    """Markdown 보고서에서 식별 가능한 모든 재무 데이터 포인트를 추출한다.
 
-    覆盖三类结构：
-      1. 多列 Markdown 表格（最主要的来源）：(行标签 + 列标题) → 数值
-      2. 带冒号的 KV 行：标签：数值 单位
-      3. 加粗数字行：**数值** 单位
+    세 가지 구조를 다룬다:
+      1. 여러 열의 Markdown 표(가장 주된 출처): (행 라벨 + 열 제목) → 수치
+      2. 콜론이 붙은 KV 행: 라벨: 수치 단위
+      3. 굵은 숫자 행: **수치** 단위
 
-    返回 list of dict：
+    반환 list of dict:
       {id, label, reported_value, unit, raw_text, line_number}
     """
     points = []
@@ -189,7 +199,7 @@ def extract_data_points(md_text: str) -> list:
             return
         if val is None or val == 0 or abs(val) > 1e15:
             return
-        # 过滤纯年份/季度
+        # 연도/분기뿐인 라벨 제외
         if re.fullmatch(r'(20\d{2}|Q[1-4]|\d{4}\s*Q[1-4])', label.strip()):
             return
         key = f"{label}|{round(val,4)}|{unit}"
@@ -208,22 +218,23 @@ def extract_data_points(md_text: str) -> list:
     lines = md_text.split('\n')
     in_code = False
 
-    # --- 1. 多列表格 ---
+    # --- 1. 여러 열의 표 ---
     for row_label, col_header, val, unit, lineno, raw in _parse_md_tables(lines):
-        # 跳过无意义行标签
+        # 무의미한 행 라벨 건너뛰기
         if not _is_valid_label(row_label):
             continue
-        # 跳过无意义列标题（YoY增速列单独标注，不作为待核验数据）
-        if col_header.upper() in ('YOY', 'YOY增速', '增速', '同比', '变化', '趋势', '说明', '备注'):
+        # 무의미한 열 제목 건너뛰기(YoY 증가율 열은 따로 표기하는 것이며 검증 대상 데이터가 아니다)
+        if col_header.upper() in ('YOY', 'YOY증가율', 'YOY 증가율', '증가율', '전년비', '전년 대비',
+                                  '전년동기비', '전년 동기 대비', '변동', '변화', '추세', '설명', '비고'):
             continue
-        # label = "行标签 · 列标题"（若列标题是行标签的补充）
+        # label = "행 라벨 · 열 제목"(열 제목이 행 라벨을 보충하는 경우)
         if col_header and col_header != row_label:
             label = f"{row_label} · {col_header}"
         else:
             label = row_label
         _add(label, val, unit, lineno, raw)
 
-    # --- 2. KV 冒号行 ---
+    # --- 2. KV 콜론 행 ---
     for lineno, line in enumerate(lines, start=1):
         stripped = line.strip()
         if stripped.startswith('```'):
@@ -232,7 +243,7 @@ def extract_data_points(md_text: str) -> list:
         if in_code or stripped.startswith('> ') or re.match(r'^#{1,6}\s', stripped):
             continue
         if '|' in stripped:
-            continue  # 表格已在上面处理
+            continue  # 표는 위에서 이미 처리했다
 
         for m in _KV_LABEL_RE.finditer(stripped):
             label = m.group('label')
@@ -244,24 +255,24 @@ def extract_data_points(md_text: str) -> list:
 
 
 def sample_points(points: list, ratio: float = 0.15, seed: int = None) -> list:
-    """随机抽取 ratio 比例的数据点，最少 3 个，最多 30 个。"""
+    """ratio 비율만큼 데이터 포인트를 무작위 추출한다. 최소 3개, 최대 30개."""
     n = max(3, min(30, math.ceil(len(points) * ratio)))
     n = min(n, len(points))
     rng = Random(seed)
     sampled = rng.sample(points, n)
-    # 按行号排序，方便人工比对
+    # 사람이 대조하기 쉽게 행 번호순으로 정렬
     return sorted(sampled, key=lambda p: p['line_number'])
 
 
 # ---------------------------------------------------------------------------
-# 准出/打回判决
+# 통과/반려 판정
 # ---------------------------------------------------------------------------
 
-_TOLERANCE = 0.01   # 1% 容差
+_TOLERANCE = 0.01   # 허용 오차 1%
 
 
 def _pct_diff(reported: float, fetched: float) -> float:
-    """相对偏差 (absolute)。"""
+    """상대 편차(absolute)."""
     if reported == 0:
         return 0.0 if fetched == 0 else float('inf')
     return abs(reported - fetched) / abs(reported)
@@ -269,13 +280,13 @@ def _pct_diff(reported: float, fetched: float) -> float:
 
 def render_verdict(results: list, report_name: str = "") -> dict:
     """
-    根据核验结果输出准出/打回判决。
+    검증 결과에 따라 통과/반려 판정을 출력한다.
 
-    results: list of dict，每项包含：
+    results: list of dict. 항목마다 다음을 담는다:
       - id, label, reported_value, unit, fetched_value, fetched_source
-      - (可选) fetched_value2, fetched_source2   ← 第二来源
+      - (선택) fetched_value2, fetched_source2   ← 두 번째 출처
 
-    返回：
+    반환:
       {
         'verdict': 'PASS' | 'FAIL',
         'pass_count': int,
@@ -292,9 +303,9 @@ def render_verdict(results: list, report_name: str = "") -> dict:
     RESET = '\033[0m'
 
     print('=' * 70)
-    print(f'{BOLD}报告数据抽检 — 准出/打回判决{RESET}')
+    print(f'{BOLD}보고서 데이터 표본 검사 — 통과/반려 판정{RESET}')
     if report_name:
-        print(f'报告：{report_name}')
+        print(f'보고서: {report_name}')
     print('=' * 70)
     print()
 
@@ -310,35 +321,35 @@ def render_verdict(results: list, report_name: str = "") -> dict:
         fetched2 = item.get('fetched_value2')
         source2 = item.get('fetched_source2', '')
 
-        # --- 主来源比对 ---
+        # --- 주 출처 대조 ---
         if fetched is None:
-            # 没有提供核验值 → 跳过（不计入通过/失败）
-            print(f'  ⬜ [{item["id"]:>2}] {label[:35]:35s} {reported:>12.2f} {unit}  →  [未提供核验值，跳过]')
+            # 검증값이 없음 → 건너뛴다(통과/실패에 넣지 않는다)
+            print(f'  ⬜ [{item["id"]:>2}] {label[:35]:35s} {reported:>12.2f} {unit}  →  [검증값 없음, 건너뜀]')
             continue
 
         fetched = float(fetched)
         diff1 = _pct_diff(reported, fetched)
 
-        # --- 第二来源比对（如有）---
+        # --- 두 번째 출처 대조(있는 경우) ---
         diff2 = None
         if fetched2 is not None:
             fetched2 = float(fetched2)
             diff2 = _pct_diff(reported, fetched2)
 
-        # 判断
+        # 판단
         pass1 = diff1 <= _TOLERANCE
         pass2 = (diff2 is None) or (diff2 <= _TOLERANCE)
 
         if pass1 and pass2:
-            status = f'{GREEN}✅ 通过{RESET}'
-            detail = f'{source}: {fetched:.2f} (偏差 {diff1*100:.2f}%)'
+            status = f'{GREEN}✅ 통과{RESET}'
+            detail = f'{source}: {fetched:.2f} (편차 {diff1*100:.2f}%)'
             if diff2 is not None:
-                detail += f'  |  {source2}: {fetched2:.2f} (偏差 {diff2*100:.2f}%)'
+                detail += f'  |  {source2}: {fetched2:.2f} (편차 {diff2*100:.2f}%)'
         elif not pass1 and not pass2:
-            status = f'{RED}❌ 不通过{RESET}'
-            detail = f'{source}: {fetched:.2f} (偏差 {diff1*100:.2f}%)'
+            status = f'{RED}❌ 불통과{RESET}'
+            detail = f'{source}: {fetched:.2f} (편차 {diff1*100:.2f}%)'
             if diff2 is not None:
-                detail += f'  |  {source2}: {fetched2:.2f} (偏差 {diff2*100:.2f}%)'
+                detail += f'  |  {source2}: {fetched2:.2f} (편차 {diff2*100:.2f}%)'
             fail_items.append({
                 'id': item['id'],
                 'label': label,
@@ -354,11 +365,11 @@ def render_verdict(results: list, report_name: str = "") -> dict:
                 'line_number': item.get('line_number', 0),
             })
         else:
-            # 一个来源通过，一个不通过 → 警告，不计入失败
-            status = f'{YELLOW}⚠️  警告{RESET}'
-            detail = f'{source}: {fetched:.2f} (偏差 {diff1*100:.2f}%)'
+            # 한 출처는 통과, 한 출처는 불통과 → 경고, 실패에 넣지 않는다
+            status = f'{YELLOW}⚠️  경고{RESET}'
+            detail = f'{source}: {fetched:.2f} (편차 {diff1*100:.2f}%)'
             if diff2 is not None:
-                detail += f'  |  {source2}: {fetched2:.2f} (偏差 {diff2*100:.2f}%)'
+                detail += f'  |  {source2}: {fetched2:.2f} (편차 {diff2*100:.2f}%)'
             warn_items.append({
                 'id': item['id'], 'label': label,
                 'reported': reported, 'unit': unit,
@@ -366,7 +377,7 @@ def render_verdict(results: list, report_name: str = "") -> dict:
                 'diff2_pct': round(diff2 * 100, 2) if diff2 is not None else None,
             })
 
-        print(f'  {status} [{item["id"]:>2}] {label[:35]:35s}  报告: {reported:>12.2f} {unit}')
+        print(f'  {status} [{item["id"]:>2}] {label[:35]:35s}  보고서: {reported:>12.2f} {unit}')
         print(f'              {" " * 38}{detail}')
 
     print()
@@ -377,30 +388,30 @@ def render_verdict(results: list, report_name: str = "") -> dict:
     warn_count = len(warn_items)
     pass_count = total - fail_count - warn_count
 
-    print(f'  抽检总数: {total}  |  通过: {GREEN}{pass_count}{RESET}  |  警告: {YELLOW}{warn_count}{RESET}  |  不通过: {RED}{fail_count}{RESET}')
+    print(f'  표본 총수: {total}  |  통과: {GREEN}{pass_count}{RESET}  |  경고: {YELLOW}{warn_count}{RESET}  |  불통과: {RED}{fail_count}{RESET}')
     print()
 
     if fail_count == 0:
-        print(f'{BOLD}{GREEN}【准出】所有抽检数据通过，报告可发布。{RESET}')
+        print(f'{BOLD}{GREEN}【통과】모든 표본 데이터가 통과했다. 보고서 발행 가능.{RESET}')
         verdict = 'PASS'
     else:
-        print(f'{BOLD}{RED}【打回】{fail_count} 个数据点核验不通过，报告需修正后重审。{RESET}')
+        print(f'{BOLD}{RED}【반려】데이터 포인트 {fail_count}개가 검증을 통과하지 못했다. 보고서를 수정한 뒤 재심사한다.{RESET}')
         print()
-        print(f'{BOLD}打回原因：{RESET}')
+        print(f'{BOLD}반려 사유:{RESET}')
         for fi in fail_items:
-            print(f'  ❌ 第 {fi["line_number"]} 行 | {fi["label"]}')
-            print(f'     报告值：{fi["reported"]} {fi["unit"]}')
-            print(f'     {fi["source"]}：{fi["fetched"]}  （偏差 {fi["diff1_pct"]}%）')
+            print(f'  ❌ {fi["line_number"]}행 | {fi["label"]}')
+            print(f'     보고서 값: {fi["reported"]} {fi["unit"]}')
+            print(f'     {fi["source"]}: {fi["fetched"]}  (편차 {fi["diff1_pct"]}%)')
             if fi.get('fetched2') is not None:
-                print(f'     {fi["source2"]}：{fi["fetched2"]}  （偏差 {fi["diff2_pct"]}%）')
-            print(f'     原文：{fi["raw_text"][:80]}')
+                print(f'     {fi["source2"]}: {fi["fetched2"]}  (편차 {fi["diff2_pct"]}%)')
+            print(f'     원문: {fi["raw_text"][:80]}')
             print()
         verdict = 'FAIL'
 
     if warn_count > 0:
-        print(f'{YELLOW}注意：{warn_count} 个数据点两来源结果不一致（超过1%），可能是口径差异（GAAP/Non-GAAP或汇率），请人工复核。{RESET}')
+        print(f'{YELLOW}주의: 데이터 포인트 {warn_count}개는 두 출처의 결과가 일치하지 않는다(1% 초과). 기준 차이(GAAP/Non-GAAP 또는 환율)일 수 있으니 사람이 재확인한다.{RESET}')
         for wi in warn_items:
-            print(f'  ⚠️  {wi["label"]}  报告:{wi["reported"]} {wi["unit"]}  偏差: {wi["diff1_pct"]}% / {wi["diff2_pct"]}%')
+            print(f'  ⚠️  {wi["label"]}  보고서:{wi["reported"]} {wi["unit"]}  편차: {wi["diff1_pct"]}% / {wi["diff2_pct"]}%')
 
     print('=' * 70)
 
@@ -420,68 +431,69 @@ def render_verdict(results: list, report_name: str = "") -> dict:
 # ---------------------------------------------------------------------------
 
 def _force_utf8_stdio():
-    """把 stdout/stderr 强制切到 UTF-8。
+    """stdout/stderr 를 UTF-8 로 강제 전환한다.
 
-    Windows 控制台默认 GBK，报告里的 €、→、★ 等字符会让 print(json.dumps(...))
-    抛 UnicodeEncodeError 直接崩溃。errors='replace' 保证极端字符也不中断流程。
+    Windows 콘솔 기본값은 cp949 등 레거시 코드페이지라서, 보고서 안의 €, →, ★ 같은 문자가
+    print(json.dumps(...)) 에서 UnicodeEncodeError 를 일으켜 그대로 죽는다.
+    errors='replace' 로 극단적인 문자가 나와도 흐름이 끊기지 않게 한다.
     """
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding='utf-8', errors='replace')
         except Exception:
-            pass  # 非 TextIOWrapper（如被重定向到管道对象）时忽略
+            pass  # TextIOWrapper 가 아닐 때(파이프 객체로 리다이렉트된 경우 등)는 무시
 
 
 def main():
     _force_utf8_stdio()
     parser = argparse.ArgumentParser(
-        description='Report Audit Tool — 研究报告数据抽检工具',
+        description='Report Audit Tool — 연구 보고서 데이터 표본 검사 도구',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-工作流程：
+워크플로:
 
-  Step 1 — 提取数据点并随机抽样 15%，输出抽检清单：
-    python3 tools/report_audit.py extract --report reports/腾讯/腾讯-research-20260408.md
+  Step 1 — 데이터 포인트를 추출하고 15%를 무작위 추출해 표본 목록을 출력:
+    python3 tools/report_audit.py extract --report reports/xxx/xxx-research-20260408.md
 
-  Step 2 — Claude 对清单中每个数据点，从可靠信源取数，
-            填入 fetched_value / fetched_source / fetched_value2 / fetched_source2
+  Step 2 — Claude 가 목록의 데이터 포인트마다 신뢰할 수 있는 출처에서 수치를 가져와
+            fetched_value / fetched_source / fetched_value2 / fetched_source2 에 채운다
 
-  Step 3 — 输入核验结果，输出准出/打回判决：
+  Step 3 — 검증 결과를 입력해 통과/반려 판정을 출력:
     python3 tools/report_audit.py verdict --results '[
-      {"id":1,"label":"营业收入","reported_value":7518,"unit":"亿","fetched_value":7518,"fetched_source":"macrotrends","fetched_value2":7500,"fetched_source2":"stockanalysis"},
+      {"id":1,"label":"매출","reported_value":7518,"unit":"억","fetched_value":7518,"fetched_source":"macrotrends","fetched_value2":7500,"fetched_source2":"stockanalysis"},
       ...
     ]'
 
-  一步预览（只打印抽检清单，不核验）：
+  미리보기(표본 목록만 출력하고 검증하지 않음):
     python3 tools/report_audit.py extract --report reports/xxx.md --dry-run
 
-  指定抽样比例（默认0.15）：
+  추출 비율 지정(기본값 0.15):
     python3 tools/report_audit.py extract --report reports/xxx.md --ratio 0.20
 
-  固定随机种子（复现同一批样本）：
+  난수 시드 고정(같은 표본을 재현):
     python3 tools/report_audit.py extract --report reports/xxx.md --seed 42
         """)
 
     sub = parser.add_subparsers(dest='command')
 
     # extract
-    ext = sub.add_parser('extract', help='从报告提取数据点并随机抽样')
-    ext.add_argument('--report', required=True, help='报告文件路径（Markdown）')
-    ext.add_argument('--ratio', type=float, default=0.15, help='抽样比例，默认 0.15')
-    ext.add_argument('--seed', type=int, default=None, help='随机种子（可选，用于复现）')
-    ext.add_argument('--dry-run', action='store_true', help='只打印，不输出 JSON')
+    ext = sub.add_parser('extract', help='보고서에서 데이터 포인트를 추출해 무작위 추출')
+    ext.add_argument('--report', required=True, help='보고서 파일 경로(Markdown)')
+    ext.add_argument('--ratio', type=float, default=0.15, help='추출 비율, 기본값 0.15')
+    ext.add_argument('--seed', type=int, default=None, help='난수 시드(선택, 재현용)')
+    ext.add_argument('--dry-run', action='store_true', help='출력만 하고 JSON 은 내보내지 않는다')
 
     # verdict
-    vrd = sub.add_parser('verdict', help='根据核验结果输出准出/打回判决')
-    vrd.add_argument('--results', required=True, help='JSON 数组，含 fetched_value 等字段')
-    vrd.add_argument('--report', default='', help='报告名称（可选，用于显示）')
-    vrd.add_argument('--output-json', action='store_true', help='将判决结果以 JSON 输出到 stdout')
+    vrd = sub.add_parser('verdict', help='검증 결과에 따라 통과/반려 판정을 출력')
+    vrd.add_argument('--results', required=True, help='JSON 배열. fetched_value 등의 필드를 담는다')
+    vrd.add_argument('--report', default='', help='보고서 이름(선택, 표시용)')
+    vrd.add_argument('--output-json', action='store_true', help='판정 결과를 JSON 으로 stdout 에 출력')
 
     args = parser.parse_args()
 
     if args.command == 'extract':
         if not os.path.exists(args.report):
-            print(f'❌ 文件不存在: {args.report}', file=sys.stderr)
+            print(f'❌ 파일이 없다: {args.report}', file=sys.stderr)
             sys.exit(1)
 
         with open(args.report, 'r', encoding='utf-8') as f:
@@ -491,26 +503,26 @@ def main():
         sampled = sample_points(all_points, ratio=args.ratio, seed=args.seed)
 
         print('=' * 70)
-        print(f'报告数据抽检清单')
-        print(f'文件：{args.report}')
-        print(f'总提取数据点：{len(all_points)}  |  抽样比例：{args.ratio:.0%}  |  抽检数量：{len(sampled)}')
+        print(f'보고서 데이터 표본 검사 목록')
+        print(f'파일: {args.report}')
+        print(f'추출된 데이터 포인트 총수: {len(all_points)}  |  추출 비율: {args.ratio:.0%}  |  표본 수: {len(sampled)}')
         if args.seed is not None:
-            print(f'随机种子：{args.seed}（可用于复现同一批样本）')
+            print(f'난수 시드: {args.seed}(같은 표본을 재현하는 데 쓸 수 있다)')
         print('=' * 70)
         print()
-        print(f'{"ID":>3}  {"行号":>5}  {"数据标签":<35}  {"报告值":>12}  {"单位"}')
+        print(f'{"ID":>3}  {"행":>5}  {"데이터 라벨":<35}  {"보고서 값":>12}  {"단위"}')
         print(f'{"─"*3}  {"─"*5}  {"─"*35}  {"─"*12}  {"─"*6}')
         for p in sampled:
             print(f'{p["id"]:>3}  {p["line_number"]:>5}  {p["label"][:35]:<35}  {p["reported_value"]:>12.2f}  {p["unit"]}')
         print()
-        print('↑ 请对上述每个数据点，从以下信源取数，填入 fetched_value：')
-        print('  美股：macrotrends.net（主）+ stockanalysis.com（副）')
-        print('  港股：aastocks.com（主）+ macrotrends ADR（副）')
-        print('  A股： eastmoney.com（主）+ cninfo.com.cn（副）')
+        print('↑ 위의 데이터 포인트마다 아래 출처에서 수치를 가져와 fetched_value 에 채운다:')
+        print('  미국 주식: macrotrends.net(주) + stockanalysis.com(부)')
+        print('  홍콩 주식: aastocks.com(주) + macrotrends ADR(부)')
+        print('  A주:       eastmoney.com(주) + cninfo.com.cn(부)')
         print()
 
         if not args.dry_run:
-            # 输出可填写的 JSON 模板
+            # 채워 넣을 수 있는 JSON 템플릿 출력
             template = []
             for p in sampled:
                 template.append({
@@ -520,12 +532,12 @@ def main():
                     'unit': p['unit'],
                     'line_number': p['line_number'],
                     'raw_text': p['raw_text'],
-                    'fetched_value': None,       # ← 填入主来源核验值
-                    'fetched_source': '',        # ← 填入主来源名称
-                    'fetched_value2': None,      # ← 填入副来源核验值（可选）
-                    'fetched_source2': '',       # ← 填入副来源名称（可选）
+                    'fetched_value': None,       # ← 주 출처 검증값을 채운다
+                    'fetched_source': '',        # ← 주 출처 이름을 채운다
+                    'fetched_value2': None,      # ← 부 출처 검증값을 채운다(선택)
+                    'fetched_source2': '',       # ← 부 출처 이름을 채운다(선택)
                 })
-            print('抽检清单 JSON（填入 fetched_value 后，传给 verdict 命令）：')
+            print('표본 목록 JSON(fetched_value 를 채운 뒤 verdict 명령에 전달):')
             print()
             print(json.dumps(template, ensure_ascii=False, indent=2))
 
@@ -533,7 +545,7 @@ def main():
         try:
             results = json.loads(args.results)
         except json.JSONDecodeError as e:
-            print(f'❌ JSON 解析失败: {e}', file=sys.stderr)
+            print(f'❌ JSON 파싱 실패: {e}', file=sys.stderr)
             sys.exit(1)
 
         report_name = args.report or ''
@@ -542,7 +554,7 @@ def main():
         if args.output_json:
             print(json.dumps(outcome, ensure_ascii=False, indent=2))
 
-        # 非零退出码表示打回，方便 CI/脚本判断
+        # 0 이 아닌 종료 코드는 반려를 뜻한다. CI/스크립트가 판단하기 쉽게 한다
         sys.exit(0 if outcome['verdict'] == 'PASS' else 1)
 
     else:

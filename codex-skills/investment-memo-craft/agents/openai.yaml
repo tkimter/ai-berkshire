@@ -1,4 +1,4 @@
 interface:
-  display_name: "Research Report Craft"
-  short_description: "Codex-style investment reports"
-  default_prompt: "Use $investment-memo-craft to create or revise this into a polished Codex investment research report."
+  display_name: "연구 보고서 다듬기"
+  short_description: "Codex 방식의 투자 연구 보고서"
+  default_prompt: "$investment-memo-craft 를 써서 이 글을 완성도 높은 Codex 투자 연구 보고서로 새로 쓰거나 고쳐 줘."

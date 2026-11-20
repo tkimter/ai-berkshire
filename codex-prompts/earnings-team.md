@@ -1,5 +1,5 @@
 ---
-description: "AI Berkshire slash entry for 실적 정독 팀: 4대 거장 병렬 해석 + 공식계정 발행."
+description: "AI Berkshire slash entry for 실적 정독 팀: 4대 거장 병렬 해석 + 게시글 발행."
 argument-hint: $ARGUMENTS
 ---
 
